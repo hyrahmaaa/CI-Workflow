@@ -2,6 +2,7 @@
 import mlflow
 import pandas as pd
 import logging
+import joblib
 
 # Konfigurasi logging dasar
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -14,12 +15,10 @@ class ChurnPredictor(mlflow.pyfunc.PythonModel):
         It loads the actual model artifact.
         """
         try:
-            # model_path akan secara otomatis disesuaikan oleh mlflow.pyfunc
-            # berdasarkan argumen '-m' yang Anda berikan di 'mlflow models serve'
-            self.model = mlflow.pyfunc.load_model(context.artifacts["model_path"])
-            logging.info("Model loaded successfully from artifacts.")
+            self.model = joblib.load(context.artifacts["model_path"])
+            logging.info("Model loaded successfully from artifacts using joblib.")
         except Exception as e:
-            logging.error(f"Error loading model: {e}")
+            logging.error(f"Error loading model with joblib: {e}")
             raise
 
     def predict(self, context, model_input):
