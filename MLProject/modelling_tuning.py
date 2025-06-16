@@ -105,22 +105,18 @@ if __name__ == "__main__":
             mlflow.log_metric("test_roc_auc", final_roc_auc)
             mlflow.log_metric("best_cv_roc_auc", best_score)
 
-            import tempfile
-            # joblib sudah diimpor di awal
-            
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                model_local_path_pkl = os.path.join(tmp_dir, "model.pkl")
-                joblib.dump(best_model, model_local_path_pkl)
+            sklearn_model_artifact_path = "sk_model_logistic_regression" # Nama artefak untuk model sklearn
+            mlflow.sklearn.log_model(best_model, sklearn_model_artifact_path)
+            print(f"Scikit-learn model logged to artifact path: {sklearn_model_artifact_path}")
 
-                mlflow.pyfunc.log_model(
-                    artifact_path="best_logistic_regression_model_artifact",
-                    python_model=ChurnPredictor(),
-                    artifacts={"model_path": model_local_path_pkl}, 
-                    input_example=X_train.head(1), 
-                    signature=mlflow.models.signature.infer_signature(X_train, y_pred)
-                )
-            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and explicit artifact path. Model should be logged to MLflow artifacts.") # DEBUGGING
+            mlflow.pyfunc.log_model(
+                artifact_path="best_logistic_regression_model_artifact", # Nama artefak utama untuk pyfunc
+                python_model=ChurnPredictor(),
+                artifacts={"model_path": sklearn_model_artifact_path}, 
+                input_example=X_train.head(1), 
+                signature=mlflow.models.signature.infer_signature(X_train, y_pred)
+            )
+            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and reference to sub-artifact. Model should be logged to MLflow artifacts.") # DEBUGGING
 
         print("\n--- Tuning Model Selesai. Hasil dicatat ke MLflow. ---")
-
-    print("\n--- Proses Tuning dan Logging Selesai. Periksa MLflow UI! ---")
+    print("\n--- Proses Tuning dan Logging Selesai. Periksa MLflow UI! ---") 
