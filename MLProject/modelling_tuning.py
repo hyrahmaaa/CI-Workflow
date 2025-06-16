@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from inference import ChurnPredictor
 import os
 
 # Import kelas ChurnPredictor dari inference.py
@@ -86,7 +87,7 @@ if __name__ == "__main__":
         final_accuracy = accuracy_score(y_test, y_pred)
         final_precision = precision_score(y_test, y_pred)
         final_recall = recall_score(y_test, y_pred)
-        final_f1 = f1_score(y_test, final_recall, final_precision) # Perbaiki ini
+        final_f1 = f1_score(y_test, y_pred)
         final_roc_auc = roc_auc_score(y_test, y_pred_proba)
 
         print(f"Final Accuracy (Test Set): {final_accuracy:.4f}")
