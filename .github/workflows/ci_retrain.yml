@@ -57,13 +57,19 @@ jobs:
         echo "MLFLOW_TRACKING_PASSWORD=${{ secrets.DAGSHUB_TOKEN }}" >> "$GITHUB_ENV"
         echo "DAGSHUB_REPO_NAME=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
 
-    - name: Run MLflow Project (Model Retraining)
+- name: Run MLflow Project (Model Retraining)
       id: run_mlflow_project
       run: |
         set -e
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda activate mlproject-env
         
+        # --- DEBUGGING: Verifikasi Isi Folder MLProject ---
+        echo "=== Verifying MLProject folder contents ==="
+        ls -F MLProject/ # Ini akan menampilkan isi folder MLProject di runner
+        echo "========================================="
+        # --- AKHIR DEBUGGING ---
+
         # --- DEBUGGING: Periksa import/syntax awal ---
         echo "=== Testing MLProject/modelling_tuning.py for basic import/syntax issues ==="
         python -c "import MLProject.modelling_tuning" || { echo "Error: Basic import/syntax check failed. See traceback above."; exit 1; }
