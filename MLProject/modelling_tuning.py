@@ -1,4 +1,4 @@
-# Workflow-CI/MLProject/modelling_tuning.py
+# CI-Workflow/MLProject/modelling_tuning.py
 
 # -*- coding: utf-8 -*-
 """modelling_tuning.py (Adapted from modelling_tuning.ipynb for MLflow Project CI)"""
@@ -20,7 +20,7 @@ PROCESSED_DATA_FOLDER_NAME = 'telco_churn_preprocessing'
 PATH_TO_PROCESSED_DATA = os.path.join('.', PROCESSED_DATA_FOLDER_NAME) 
 
 DAGSHUB_USERNAME = "hyrahmaaa" 
-DAGSHUB_REPO_NAME = "Workflow-CI" 
+DAGSHUB_REPO_NAME = "CI-Workflow" 
 
 def load_processed_data(path):
     """
