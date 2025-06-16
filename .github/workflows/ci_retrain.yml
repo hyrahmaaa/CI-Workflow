@@ -77,7 +77,7 @@ jobs:
         # --- AKHIR DEBUGGING ---
 
         echo "=== Executing mlflow run MLProject/ Directly ==="
-        MLFLOW_FULL_OUTPUT=$(mlflow run MLProject/ 2>&1)
+        MLFLOW_FULL_OUTPUT=$(mlflow run MLProject/ --no-conda -vv 2>&1)
         echo "$MLFLOW_FULL_OUTPUT"
 
         RUN_ID=$(echo "$MLFLOW_FULL_OUTPUT" | grep -oP "run with ID '\K[^']+" | tail -n 1)
