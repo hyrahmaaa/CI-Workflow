@@ -60,7 +60,7 @@ jobs:
     - name: Run MLflow Project (Model Retraining)
       id: run_mlflow_project
       run: |
-        set -ex # Tambahkan 'x' di sini untuk debugging shell ekstrem
+        set -ex
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda activate mlproject-env
         
@@ -71,14 +71,15 @@ jobs:
         # --- AKHIR DEBUGGING ---
 
         # --- DEBUGGING: Periksa import/syntax awal ---
+        # Ini akan memastikan tidak ada error syntax/import, dan tidak akan mencetak output dari __main__
         echo "=== Testing MLProject/modelling_tuning.py for basic import/syntax issues ==="
         python -c "import MLProject.modelling_tuning" || { echo "Error: Basic import/syntax check failed. See traceback above."; exit 1; }
-        echo "=== Basic import/syntax check passed. Proceeding with direct Python execution ==="
+        echo "=== Basic import/syntax check passed. Proceeding with module execution ==="
         # --- AKHIR DEBUGGING ---
 
-        echo "=== Executing modelling_tuning.py directly with Python ==="
-        # Jalankan skrip Python langsung, dan tangkap semua outputnya
-        MLFLOW_FULL_OUTPUT=$(python MLProject/modelling_tuning.py 2>&1)
+        echo "=== Executing MLProject.modelling_tuning directly as a module ==="
+        # Jalankan skrip Python sebagai modul dalam paket. Ini akan memicu __main__
+        MLFLOW_FULL_OUTPUT=$(python -m MLProject.modelling_tuning 2>&1)
         echo "$MLFLOW_FULL_OUTPUT"
         
         # Ekstrak RUN_ID dari output Python script
