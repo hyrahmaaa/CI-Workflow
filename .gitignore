@@ -1,0 +1,8 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# DVC (jika Anda menggunakan DVC, ini seringkali besar dan dilacak oleh DVC, bukan Git)
+.dvc/
