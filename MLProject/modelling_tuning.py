@@ -13,7 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 # Import kelas ChurnPredictor dari inference.py
-from inference import ChurnPredictor 
+from .inference import ChurnPredictor 
 
 PROCESSED_DATA_FOLDER_NAME = 'telco_churn_preprocessing'
 PATH_TO_PROCESSED_DATA = os.path.join('.', PROCESSED_DATA_FOLDER_NAME) 
