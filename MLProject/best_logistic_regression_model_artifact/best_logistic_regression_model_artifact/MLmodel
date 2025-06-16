@@ -4,7 +4,7 @@ flavors:
     artifacts:
       model_path:
         path: artifacts/logreg_model.pkl
-        uri: /tmp/tmpyyxisnwj/logreg_model.pkl
+        uri: /tmp/tmp31oq1phf/logreg_model.pkl
     cloudpickle_version: 3.1.1
     code: code
     env:
@@ -16,8 +16,8 @@ flavors:
     streamable: false
 mlflow_version: 2.13.0
 model_size_bytes: 3117
-model_uuid: efe7eed9298d4fa29cc4e64e01cf8a1e
-run_id: 88ddb07183f44d39b7ffee5303ea3395
+model_uuid: a88627c1de83480887c76193707095e8
+run_id: 221e09bae99e48998fa13843e24f803b
 saved_input_example_info:
   artifact_path: input_example.json
   pandas_orient: split
@@ -51,4 +51,4 @@ signature:
     "name": "PaymentMethod_Mailed check", "required": true}]'
   outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "int64", "shape": [-1]}}]'
   params: null
-utc_time_created: '2025-06-16 13:23:09.132938'
+utc_time_created: '2025-06-16 15:49:52.930551'
