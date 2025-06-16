@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Churn Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div class="container mt-5">
+    <h2 class="mb-4">Customer Churn Prediction</h2>
+    <form method="POST" action="/" class="row g-3">
+
+        <!-- Gender -->
+        <div class="col-md-6">
+            <label for="gender" class="form-label">Gender</label>
+            <select class="form-select" name="gender" required>
+                <option value="0">Female</option>
+                <option value="1">Male</option>
+            </select>
+        </div>
+
+        <!-- SeniorCitizen -->
+        <div class="col-md-6">
+            <label for="SeniorCitizen" class="form-label">Senior Citizen</label>
+            <select class="form-select" name="SeniorCitizen" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+
+        <!-- Partner -->
+        <div class="col-md-6">
+            <label for="Partner" class="form-label">Partner</label>
+            <select class="form-select" name="Partner" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+
+        <!-- Dependents -->
+        <div class="col-md-6">
+            <label for="Dependents" class="form-label">Dependents</label>
+            <select class="form-select" name="Dependents" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+
+        <!-- Tenure -->
+        <div class="col-md-6">
+            <label for="tenure" class="form-label">Tenure (Months)</label>
+            <input type="number" step="1" name="tenure" class="form-control" required>
+        </div>
+
+        <!-- PhoneService -->
+        <div class="col-md-6">
+            <label for="PhoneService" class="form-label">Phone Service</label>
+            <select class="form-select" name="PhoneService" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+
+        <!-- PaperlessBilling -->
+        <div class="col-md-6">
+            <label for="PaperlessBilling" class="form-label">Paperless Billing</label>
+            <select class="form-select" name="PaperlessBilling" required>
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+        </div>
+
+        <!-- MonthlyCharges -->
+        <div class="col-md-6">
+            <label for="MonthlyCharges" class="form-label">Monthly Charges</label>
+            <input type="number" step="0.01" name="MonthlyCharges" class="form-control" required>
+        </div>
+
+        <!-- TotalCharges -->
+        <div class="col-md-6">
+            <label for="TotalCharges" class="form-label">Total Charges</label>
+            <input type="number" step="0.01" name="TotalCharges" class="form-control" required>
+        </div>
+
+        <!-- Sisa fitur dummy: boolean one-hot encoded -->
+        {% for feature in [
+            'MultipleLines_No phone service', 'MultipleLines_Yes',
+            'InternetService_Fiber optic', 'InternetService_No',
+            'OnlineSecurity_No internet service', 'OnlineSecurity_Yes',
+            'OnlineBackup_No internet service', 'OnlineBackup_Yes',
+            'DeviceProtection_No internet service', 'DeviceProtection_Yes',
+            'TechSupport_No internet service', 'TechSupport_Yes',
+            'StreamingTV_No internet service', 'StreamingTV_Yes',
+            'StreamingMovies_No internet service', 'StreamingMovies_Yes',
+            'Contract_One year', 'Contract_Two year',
+            'PaymentMethod_Credit card (automatic)',
+            'PaymentMethod_Electronic check',
+            'PaymentMethod_Mailed check'
+        ] %}
+        <div class="col-md-6">
+            <label class="form-label">{{ feature }}</label>
+            <select class="form-select" name="{{ feature }}" required>
+                <option value="0">False</option>
+                <option value="1">True</option>
+            </select>
+        </div>
+        {% endfor %}
+
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Predict</button>
+        </div>
+
+        {% if prediction is defined %}
+        <div class="col-12 mt-3">
+            <div class="alert alert-info">
+                <strong>Prediction:</strong> {{ prediction }}
+            </div>
+        </div>
+        {% endif %}
+    </form>
+</div>
+</body>
+</html>
