@@ -1,0 +1,18 @@
+# .github/workflows/test.yml
+
+name: Simple Hello World Test
+
+on:
+  push:
+    branches:
+      - main # Akan berjalan setiap kali ada push ke branch main
+  workflow_dispatch: # Memungkinkan Anda menjalankan workflow ini secara manual
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Say Hello
+      run: echo "Hello, GitHub Actions! This is a simple test workflow."
+    - name: List files in repository
+      run: ls -la
