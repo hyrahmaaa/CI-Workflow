@@ -82,3 +82,63 @@ jobs:
         MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
         MLFLOW_TRACKING_USERNAME: ${{ env.MLFLOW_TRACKING_USERNAME }}
         MLFLOW_TRACKING_PASSWORD: ${{ env.MLFLOW_TRACKING_PASSWORD }}
+
+    - name: Download Model Artifact for Further Use
+      run: |
+        set -e
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate mlproject-env
+        
+        MLFLOW_RUN_ID="${{ steps.run_mlflow_project.outputs.mlflow_run_id }}"
+        
+        if [ -z "$MLFLOW_RUN_ID" ]; then
+          echo "Error: MLFLOW_RUN_ID is empty. Cannot download artifact."
+          exit 1
+        fi
+
+        ARTIFACT_PATH_ON_DAGSHUB="best_logistic_regression_model_artifact"
+        DOWNLOAD_DESTINATION="MLProject/best_logistic_regression_model_artifact"
+
+        echo "Attempting to download artifact '$ARTIFACT_PATH_ON_DAGSHUB' for run ID '$MLFLOW_RUN_ID' from DagsHub..."
+        
+        python -c "
+import mlflow
+import os
+import shutil 
+
+os.environ['MLFLOW_TRACKING_URI'] = os.environ.get('MLFLOW_TRACKING_URI_GHA')
+os.environ['MLFLOW_TRACKING_USERNAME'] = os.environ.get('MLFLOW_TRACKING_USERNAME_GHA')
+os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('MLFLOW_TRACKING_PASSWORD_GHA')
+
+run_id = os.environ.get('MLFLOW_RUN_ID_GHA')
+artifact_path_on_dagshub = os.environ.get('ARTIFACT_NAME_ON_DAGSHUB_GHA')
+download_destination = os.environ.get('DOWNLOAD_DESTINATION_GHA')
+
+print(f'Mencoba mengunduh artefak: run_id={run_id}, artifact_path={artifact_path_on_dagshub}, dst_path={download_destination}')
+
+if os.path.exists(download_destination):
+    print(f'Membersihkan direktori yang sudah ada: {download_destination}')
+    shutil.rmtree(download_destination)
+    
+downloaded_path = mlflow.artifacts.download_artifacts(
+    run_id=run_id,
+    artifact_path=artifact_path_on_dagshub,
+    dst_path=download_destination
+)
+print(f'Artefak berhasil diunduh ke: {downloaded_path}')
+
+if not os.path.exists(downloaded_path):
+    raise FileNotFoundError(f'Path artefak yang diunduh tidak ada: {downloaded_path}')
+if not os.path.isdir(downloaded_path):
+    raise ValueError(f'Path artefak yang diunduh bukan direktori: {downloaded_path}')
+if not os.listdir(downloaded_path):
+    raise ValueError(f'Direktori artefak yang diunduh kosong: {downloaded_path}')
+"
+      env:
+        MLFLOW_RUN_ID_GHA: ${{ steps.run_mlflow_project.outputs.mlflow_run_id }}
+        ARTIFACT_NAME_ON_DAGSHUB_GHA: best_logistic_regression_model_artifact
+        DOWNLOAD_DESTINATION_GHA: MLProject/best_logistic_regression_model_artifact
+        MLFLOW_TRACKING_URI_GHA: ${{ env.MLFLOW_TRACKING_URI }}
+        MLFLOW_TRACKING_USERNAME_GHA: ${{ env.MLFLOW_TRACKING_USERNAME }}
+        MLFLOW_TRACKING_PASSWORD_GHA: ${{ secrets.DAGSHUB_TOKEN }}
+      if: success() && steps.run_mlflow_project.outputs.mlflow_run_id != ''
