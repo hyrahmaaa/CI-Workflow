@@ -104,7 +104,7 @@ jobs:
         python -c "
 
         import mlflow
-        impor os
+        import os
         import shutil
 
         os.environ['MLFLOW_TRACKING_URI'] = os.environ.get('MLFLOW_TRACKING_URI_GHA')
