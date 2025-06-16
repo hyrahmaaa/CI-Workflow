@@ -60,7 +60,7 @@ jobs:
     - name: Run MLflow Project (Model Retraining)
       id: run_mlflow_project
       run: |
-        set -e
+        set -ex # Tambahkan 'x' di sini untuk debugging shell ekstrem
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda activate mlproject-env
         
@@ -72,7 +72,6 @@ jobs:
 
         # --- DEBUGGING: Periksa import/syntax awal ---
         echo "=== Testing MLProject/modelling_tuning.py for basic import/syntax issues ==="
-        # Cek ini masih diperlukan untuk validasi awal
         python -c "import MLProject.modelling_tuning" || { echo "Error: Basic import/syntax check failed. See traceback above."; exit 1; }
         echo "=== Basic import/syntax check passed. Proceeding with direct Python execution ==="
         # --- AKHIR DEBUGGING ---
