@@ -89,21 +89,14 @@ jobs:
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda activate mlproject-env
 
-     - name: Verify MLflow Run Exists on DagsHub (DEBUGGING)
-      run: |
-        set -e
-        source "$(conda info --base)/etc/profile.d/conda.sh"
-        conda activate mlproject-env
-
         MLFLOW_RUN_ID="${{ steps.run_mlflow_project.outputs.mlflow_run_id }}"
         
         echo "Verifying MLflow Run ID '$MLFLOW_RUN_ID' on DagsHub..."
         
         echo "--- MLflow Version Check ---"
-        mlflow --version # Tambahkan baris ini
+        mlflow --version 
         echo "--------------------------"
 
-        # Kita akan kembali mencoba format 'mlflow search runs'
         mlflow search runs --output-plus-sig-figs --filter "run_id = '${MLFLOW_RUN_ID}'" --max-results 1
         
         if [ $? -ne 0 ]; then
