@@ -7,6 +7,7 @@ import mlflow.sklearn
 import dagshub
 import joblib 
 import os
+import tempfile
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression 
@@ -105,18 +106,17 @@ if __name__ == "__main__":
             mlflow.log_metric("test_roc_auc", final_roc_auc)
             mlflow.log_metric("best_cv_roc_auc", best_score)
 
-            sklearn_model_artifact_path = "sk_model_logistic_regression" # Nama artefak untuk model sklearn
-            mlflow.sklearn.log_model(best_model, sklearn_model_artifact_path)
-            print(f"Scikit-learn model logged to artifact path: {sklearn_model_artifact_path}")
+            with tempfile.TemporaryDirectory() as tmp_model_dir:
+                temp_model_filepath = os.path.join(tmp_model_dir, "model.pkl")
+                joblib.dump(best_model, temp_model_filepath)
 
-            mlflow.pyfunc.log_model(
-                artifact_path="best_logistic_regression_model_artifact", # Nama artefak utama untuk pyfunc
-                python_model=ChurnPredictor(),
-                artifacts={"model_path": sklearn_model_artifact_path}, 
-                input_example=X_train.head(1), 
-                signature=mlflow.models.signature.infer_signature(X_train, y_pred)
-            )
-            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and reference to sub-artifact. Model should be logged to MLflow artifacts.") # DEBUGGING
-
+                mlflow.pyfunc.log_model(
+                    artifact_path="best_logistic_regression_model_artifact", # Nama artefak utama untuk pyfunc
+                    python_model=ChurnPredictor(),
+                    artifacts={"model_pkl_file": temp_model_filepath}, 
+                    input_example=X_train.head(1), 
+                    signature=mlflow.models.signature.infer_signature(X_train, y_pred)
+                )
+            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and explicit local file path. Model should be logged to MLflow artifacts.")
         print("\n--- Tuning Model Selesai. Hasil dicatat ke MLflow. ---")
     print("\n--- Proses Tuning dan Logging Selesai. Periksa MLflow UI! ---") 

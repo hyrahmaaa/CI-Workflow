@@ -15,10 +15,10 @@ class ChurnPredictor(mlflow.pyfunc.PythonModel):
         It loads the actual model artifact.
         """
         try:
-            self.model = mlflow.pyfunc.load_model(context.artifacts["model_path"])
-            logging.info("Model loaded successfully from artifacts using mlflow.pyfunc.load_model.")
+            self.model = joblib.load(context.artifacts["model_pkl_file"])
+            logging.info("Model loaded successfully from artifacts using joblib.")
         except Exception as e:
-            logging.error(f"Error loading model with mlflow.pyfunc.load_model: {e}")
+            logging.error(f"Error loading model with joblib: {e}")
             raise
 
     def predict(self, context, model_input):
