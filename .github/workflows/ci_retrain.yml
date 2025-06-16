@@ -93,7 +93,7 @@ jobs:
         
         echo "Verifying MLflow Run ID '$MLFLOW_RUN_ID' on DagsHub..."
         
-        mlflow runs search--output-plus-sig-figs --filter "run_id = '${MLFLOW_RUN_ID}'" --max-results 1
+        mlflow runs search --output-plus-sig-figs --filter "run_id = '${MLFLOW_RUN_ID}'" --max-results 1
         
         if [ $? -ne 0 ]; then
           echo "Error: mlflow search runs command failed or run not found!"
