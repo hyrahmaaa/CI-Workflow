@@ -1,6 +1,6 @@
 # MLProject/modelling_tuning.py
 
-import pandas as pd 
+import pandas as pd
 import numpy as np
 import mlflow
 import mlflow.sklearn
@@ -11,12 +11,8 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from inference import ChurnPredictor
-import os
 
 # Import kelas ChurnPredictor dari inference.py
-# Kita asumsikan inference.py ada di direktori yang sama dengan modelling_tuning.py
-# Pastikan inference.py sudah bersih seperti yang terakhir kita diskusikan (bagian __main__ dikomentari)
 from inference import ChurnPredictor 
 
 PROCESSED_DATA_FOLDER_NAME = 'telco_churn_preprocessing'
@@ -30,8 +26,6 @@ def load_processed_data(path):
     Memuat data training dan testing yang sudah diproses.
     """
     print(f"Memuat data yang diproses dari: {path}")
-    # Perbaiki path absolut agar berfungsi di CI/CD dan lokal
-    # Menggunakan os.path.abspath untuk mendapatkan path saat ini
     base_dir = os.path.abspath(os.path.dirname(__file__))
     absolute_path = os.path.join(base_dir, path)
     
@@ -87,7 +81,7 @@ if __name__ == "__main__":
         final_accuracy = accuracy_score(y_test, y_pred)
         final_precision = precision_score(y_test, y_pred)
         final_recall = recall_score(y_test, y_pred)
-        final_f1 = f1_score(y_test, y_pred)
+        final_f1 = f1_score(y_test, y_pred) # Sudah diperbaiki
         final_roc_auc = roc_auc_score(y_test, y_pred_proba)
 
         print(f"Final Accuracy (Test Set): {final_accuracy:.4f}")
@@ -108,13 +102,12 @@ if __name__ == "__main__":
             mlflow.log_metric("test_precision", final_precision)
             mlflow.log_metric("test_recall", final_recall)
             mlflow.log_metric("test_f1_score", final_f1)
-            mlflow.log_metric("test_roc_auc", final_roc_auc) 
+            mlflow.log_metric("test_roc_auc", final_roc_auc)
             mlflow.log_metric("best_cv_roc_auc", best_score)
 
-            # --- PERUBAHAN KRITIS DI SINI ---
             import tempfile
-            import joblib # joblib sudah diimpor di awal, bagus
-
+            # joblib sudah diimpor di awal
+            
             with tempfile.TemporaryDirectory() as tmp_dir:
                 model_local_path_pkl = os.path.join(tmp_dir, "model.pkl")
                 joblib.dump(best_model, model_local_path_pkl)
@@ -122,12 +115,11 @@ if __name__ == "__main__":
                 mlflow.pyfunc.log_model(
                     artifact_path="best_logistic_regression_model_artifact",
                     python_model=ChurnPredictor(),
-
                     artifacts={"model_path": model_local_path_pkl}, 
                     input_example=X_train.head(1), 
                     signature=mlflow.models.signature.infer_signature(X_train, y_pred)
                 )
-            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and explicit artifact path. Model should be logged to MLflow artifacts.") 
+            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and explicit artifact path. Model should be logged to MLflow artifacts.") # DEBUGGING
 
         print("\n--- Tuning Model Selesai. Hasil dicatat ke MLflow. ---")
 
