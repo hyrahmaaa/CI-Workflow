@@ -77,20 +77,16 @@ jobs:
         # --- AKHIR DEBUGGING ---
 
         echo "=== Executing mlflow run MLProject/ Directly ==="
-        
-        # --- PERUBAHAN DI SINI: Tangkap output ke file ---
-        MLFLOW_LOG_FILE=$(mktemp) # Buat file sementara
-        mlflow run MLProject/ --no-conda -vv > "$MLFLOW_LOG_FILE" 2>&1 || {
+        # HAPUS --no-conda DI SINI. Tetap pertahankan -vv untuk verbose
+        MLFLOW_FULL_OUTPUT=$(mlflow run MLProject/ -vv > "$MLFLOW_LOG_FILE" 2>&1 || {
           echo "Error: mlflow run command failed!"
-          cat "$MLFLOW_LOG_FILE" # Cetak isi file log jika gagal
-          rm "$MLFLOW_LOG_FILE" # Hapus file sementara
+          cat "$MLFLOW_LOG_FILE"
+          rm "$MLFLOW_LOG_FILE"
           exit 1
-        }
-        MLFLOW_FULL_OUTPUT=$(cat "$MLFLOW_LOG_FILE") # Baca kembali output dari file
-        echo "$MLFLOW_FULL_OUTPUT" # Cetak ke log GitHub Actions
-        rm "$MLFLOW_LOG_FILE" # Hapus file sementara
-        # --- AKHIR PERUBAHAN ---
-
+        })
+        echo "$MLFLOW_FULL_OUTPUT"
+        rm "$MLFLOW_LOG_FILE" # Hapus file sementara setelah dibaca
+        
         RUN_ID=$(echo "$MLFLOW_FULL_OUTPUT" | grep -oP "run with ID '\K[^']+" | tail -n 1)
         
         if [ -z "$RUN_ID" ]; then
