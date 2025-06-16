@@ -52,7 +52,7 @@ jobs:
 
     - name: Configure DagsHub MLflow Tracking
       run: |
-        echo "MLFLOW_TRACKING_URI=https://dagshub.com/hyrahmaaa/Workflow-CI.mlflow" >> "$GITHUB_ENV"
+        echo "MLFLOW_TRACKING_URI=https://dagshub.com/hyrahmaaa/CI-Workflow.mlflow" >> "$GITHUB_ENV"
         echo "MLFLOW_TRACKING_USERNAME=hyrahmaaa" >> "$GITHUB_ENV"
         echo "MLFLOW_TRACKING_PASSWORD=${{ secrets.DAGSHUB_TOKEN }}" >> "$GITHUB_ENV"
         echo "DAGSHUB_REPO_NAME=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
