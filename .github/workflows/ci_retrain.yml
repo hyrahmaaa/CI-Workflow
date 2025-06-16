@@ -105,33 +105,30 @@ jobs:
         import os
         import pandas as pd # Import pandas untuk menampilkan hasil dengan baik
 
-# Set tracking URI dan kredensial dari environment variables
-# Variabel yang diatur di step sebelumnya akan tersedia sebagai GITHUB_ENV
-# dan kemudian diakses oleh script python ini
-      mlflow.set_tracking_uri(os.environ.get('MLFLOW_TRACKING_URI'))
-      os.environ['MLFLOW_TRACKING_USERNAME'] = os.environ.get('MLFLOW_TRACKING_USERNAME')
-      os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('MLFLOW_TRACKING_PASSWORD')
-
-      run_id_to_find = os.environ.get('MLFLOW_RUN_ID') # Ambil RUN_ID dari env var
-      
-      print(f'Mencoba mencari run dengan ID: {run_id_to_find}')
-      
-      try:
-          runs_df = mlflow.search_runs(
-              filter_string=f'run_id = \"{run_id_to_find}\"',
-              max_results=1,
-              output_format='df' # Minta output dalam bentuk DataFrame pandas
-          )
+        mlflow.set_tracking_uri(os.environ.get('MLFLOW_TRACKING_URI'))
+        os.environ['MLFLOW_TRACKING_USERNAME'] = os.environ.get('MLFLOW_TRACKING_USERNAME')
+        os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('MLFLOW_TRACKING_PASSWORD')
+  
+        run_id_to_find = os.environ.get('MLFLOW_RUN_ID') # Ambil RUN_ID dari env var
+        
+        print(f'Mencoba mencari run dengan ID: {run_id_to_find}')
+        
+        try:
+            runs_df = mlflow.search_runs(
+                filter_string=f'run_id = \"{run_id_to_find}\"',
+                max_results=1,
+                output_format='df' # Minta output dalam bentuk DataFrame pandas
+            )
     
-          if not runs_df.empty:
-              print(f'MLflow Run dengan ID {run_id_to_find} ditemukan di DagsHub via Python API!')
-              # Tampilkan detail run yang ditemukan
-              print('--- Run Details ---')
-              print(runs_df.to_string())
-              print('-------------------')
-          else:
-              print(f'Error: MLflow Run dengan ID {run_id_to_find} TIDAK ditemukan di DagsHub via Python API.')
-              exit(1) # Keluar dengan error agar langkah ini gagal
+      if not runs_df.empty:
+          print(f'MLflow Run dengan ID {run_id_to_find} ditemukan di DagsHub via Python API!')
+          # Tampilkan detail run yang ditemukan
+          print('--- Run Details ---')
+          print(runs_df.to_string())
+          print('-------------------')
+      else:
+          print(f'Error: MLflow Run dengan ID {run_id_to_find} TIDAK ditemukan di DagsHub via Python API.')
+          exit(1) # Keluar dengan error agar langkah ini gagal
       except Exception as e:
           print(f'Critical Error during MLflow Python API search: {e}')
           exit(1) # Keluar dengan error jika ada exception
