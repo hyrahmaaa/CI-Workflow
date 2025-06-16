@@ -104,10 +104,11 @@ if __name__ == "__main__":
             mlflow.log_param("cv_strategy", "GridSearchCV")
             mlflow.log_param("cv_folds", grid_search.cv) 
             
-            mlflow.log_metric("test_accuracy", final_accuracy)
+	    mlflow.log_metric("test_accuracy", final_accuracy)
             mlflow.log_metric("test_precision", final_precision)
             mlflow.log_metric("test_recall", final_recall)
-            mlflow.log_metric("test_f1_score", final_f1)            mlflow.log_metric("test_roc_auc", final_roc_auc)
+            mlflow.log_metric("test_f1_score", final_f1)
+            mlflow.log_metric("test_roc_auc", final_roc_auc) 
             mlflow.log_metric("best_cv_roc_auc", best_score)
 
             # --- PERUBAHAN KRITIS DI SINI ---
