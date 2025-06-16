@@ -147,8 +147,7 @@ jobs:
     - name: Commit processed data
       run: |
         git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git pull origin main --rebase
+        git config user.email "github-actions[bot]@users.noreply.github.com"  
         git add .
         git commit -m "Automated: Model retraining results and artifacts updated" || true
         git pull origin main --rebase
