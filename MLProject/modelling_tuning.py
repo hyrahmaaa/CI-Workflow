@@ -1,6 +1,4 @@
-# MLProject/modelling_tuning.py
-
-import pandas as pd
+import pandas as pd 
 import numpy as np
 import mlflow
 import mlflow.sklearn
@@ -9,12 +7,11 @@ import joblib
 import os
 import tempfile
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression 
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-# Import kelas ChurnPredictor dari inference.py
-from .inference import ChurnPredictor 
+# Import custom model dari inference.py
+from inference import ChurnPredictor 
 
 PROCESSED_DATA_FOLDER_NAME = 'telco_churn_preprocessing'
 PATH_TO_PROCESSED_DATA = os.path.join('.', PROCESSED_DATA_FOLDER_NAME) 
@@ -23,16 +20,12 @@ DAGSHUB_USERNAME = "hyrahmaaa"
 DAGSHUB_REPO_NAME = "CI-Workflow" 
 
 def load_processed_data(path):
-    """
-    Memuat data training dan testing yang sudah diproses.
-    """
     print(f"Memuat data yang diproses dari: {path}")
     base_dir = os.path.abspath(os.path.dirname(__file__))
     absolute_path = os.path.join(base_dir, path)
     
     if not os.path.exists(absolute_path):
         print(f"Error: Direktori '{absolute_path}' tidak ditemukan.")
-        print("Pastikan Anda telah menjalankan langkah preprocessing dan menyimpan data di lokasi ini.")
         return None, None, None, None
 
     try:
@@ -43,8 +36,7 @@ def load_processed_data(path):
         print("Data yang diproses berhasil dimuat.")
         return X_train, X_test, y_train, y_test
     except FileNotFoundError as e:
-        print(f"Error: File tidak ditemukan di '{absolute_path}'. Detail: {e}")
-        print("Pastikan semua file (X_train.csv, X_test.csv, y_train.csv, y_test.csv) ada di direktori yang ditentukan.")
+        print(f"File tidak ditemukan: {e}")
         return None, None, None, None
 
 if __name__ == "__main__":
@@ -82,7 +74,7 @@ if __name__ == "__main__":
         final_accuracy = accuracy_score(y_test, y_pred)
         final_precision = precision_score(y_test, y_pred)
         final_recall = recall_score(y_test, y_pred)
-        final_f1 = f1_score(y_test, y_pred) # Sudah diperbaiki
+        final_f1 = f1_score(y_test, y_pred)
         final_roc_auc = roc_auc_score(y_test, y_pred_proba)
 
         print(f"Final Accuracy (Test Set): {final_accuracy:.4f}")
@@ -106,17 +98,22 @@ if __name__ == "__main__":
             mlflow.log_metric("test_roc_auc", final_roc_auc)
             mlflow.log_metric("best_cv_roc_auc", best_score)
 
-            with tempfile.TemporaryDirectory() as tmp_model_dir:
-                temp_model_filepath = os.path.join(tmp_model_dir, "model.pkl")
-                joblib.dump(best_model, temp_model_filepath)
+            # === Perbaikan utama: sertakan inference.py ===
+            with tempfile.TemporaryDirectory() as temp_dir:
+                model_path = os.path.join(temp_dir, "logreg_model.pkl")
+                joblib.dump(best_model, model_path)
 
                 mlflow.pyfunc.log_model(
-                    artifact_path="best_logistic_regression_model_artifact", # Nama artefak utama untuk pyfunc
+                    artifact_path="best_logistic_regression_model_artifact",
                     python_model=ChurnPredictor(),
-                    artifacts={"model_pkl_file": temp_model_filepath}, 
-                    input_example=X_train.head(1), 
+                    artifacts={"model_path": model_path},
+                    code_path=["MLProject/inference.py"],  # ← ini penting
+                    input_example=X_train.head(1),
                     signature=mlflow.models.signature.infer_signature(X_train, y_pred)
                 )
-            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and explicit local file path. Model should be logged to MLflow artifacts.")
+
+            print("Model berhasil dicatat ke MLflow menggunakan pyfunc dan ChurnPredictor.")
+
         print("\n--- Tuning Model Selesai. Hasil dicatat ke MLflow. ---")
-    print("\n--- Proses Tuning dan Logging Selesai. Periksa MLflow UI! ---") 
+
+    print("\n--- Proses Tuning dan Logging Selesai. Periksa MLflow UI! ---")
