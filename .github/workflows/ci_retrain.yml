@@ -36,6 +36,7 @@ jobs:
           auto-activate-base: true
           activate-environment: mlproject-env
           environment-file: MLProject/conda.yaml
+          force-create: true
 
     - name: Install MLflow and DagsHub client
       run: |
@@ -43,6 +44,7 @@ jobs:
         conda activate mlproject-env
         
         python -m pip install --upgrade pip
+        pip cache purge 
         pip install mlflow==2.13.0 dagshub==0.5.10
 
         python -c "import dagshub; print('DagsHub version:', dagshub.__version__)"
