@@ -89,27 +89,58 @@ jobs:
         source "$(conda info --base)/etc/profile.d/conda.sh"
         conda activate mlproject-env
 
+    - name: Verify MLflow Run Exists on DagsHub (DEBUGGING)
+      run: |
+        set -e
+        source "$(conda info --base)/etc/profile.d/conda.sh"
+        conda activate mlproject-env
+
         MLFLOW_RUN_ID="${{ steps.run_mlflow_project.outputs.mlflow_run_id }}"
         
-        echo "Verifying MLflow Run ID '$MLFLOW_RUN_ID' on DagsHub..."
+        echo "Verifying MLflow Run ID '$MLFLOW_RUN_ID' on DagsHub using Python API..."
         
-        echo "--- MLflow Version Check ---"
-        mlflow --version # Tambahkan baris ini
-        echo "--------------------------"
+        python -c "
+        
+        import mlflow
+        import os
+        import pandas as pd # Import pandas untuk menampilkan hasil dengan baik
 
-        # Kita akan kembali mencoba format 'mlflow search runs'
-        mlflow search runs --output-plus-sig-figs --filter "run_id = '${MLFLOW_RUN_ID}'" --max-results 1
-        
-        if [ $? -ne 0 ]; then
-          echo "Error: mlflow search runs command failed or run not found!"
-          exit 1
-        else
-          echo "MLflow Run found successfully on DagsHub!"
-        fi
-      env:
+# Set tracking URI dan kredensial dari environment variables
+# Variabel yang diatur di step sebelumnya akan tersedia sebagai GITHUB_ENV
+# dan kemudian diakses oleh script python ini
+      mlflow.set_tracking_uri(os.environ.get('MLFLOW_TRACKING_URI'))
+      os.environ['MLFLOW_TRACKING_USERNAME'] = os.environ.get('MLFLOW_TRACKING_USERNAME')
+      os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('MLFLOW_TRACKING_PASSWORD')
+
+      run_id_to_find = os.environ.get('MLFLOW_RUN_ID') # Ambil RUN_ID dari env var
+      
+      print(f'Mencoba mencari run dengan ID: {run_id_to_find}')
+      
+      try:
+          runs_df = mlflow.search_runs(
+              filter_string=f'run_id = \"{run_id_to_find}\"',
+              max_results=1,
+              output_format='df' # Minta output dalam bentuk DataFrame pandas
+          )
+    
+          if not runs_df.empty:
+              print(f'MLflow Run dengan ID {run_id_to_find} ditemukan di DagsHub via Python API!')
+              # Tampilkan detail run yang ditemukan
+              print('--- Run Details ---')
+              print(runs_df.to_string())
+              print('-------------------')
+          else:
+              print(f'Error: MLflow Run dengan ID {run_id_to_find} TIDAK ditemukan di DagsHub via Python API.')
+              exit(1) # Keluar dengan error agar langkah ini gagal
+      except Exception as e:
+          print(f'Critical Error during MLflow Python API search: {e}')
+          exit(1) # Keluar dengan error jika ada exception
+      "
+      env: # Variabel lingkungan yang akan diteruskan ke skrip Python di atas
         MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
         MLFLOW_TRACKING_USERNAME: ${{ env.MLFLOW_TRACKING_USERNAME }}
         MLFLOW_TRACKING_PASSWORD: ${{ env.MLFLOW_TRACKING_PASSWORD }}
+        MLFLOW_RUN_ID: ${{ steps.run_mlflow_project.outputs.mlflow_run_id }} # Teruskan run ID ke script Python
       if: success() && steps.run_mlflow_project.outputs.mlflow_run_id != ''
       
     - name: Download Model Artifact for Further Use
