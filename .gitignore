@@ -1,2 +1,5 @@
 # Ignore MLflow downloaded model artifacts to prevent merge conflicts
 MLProject/best_logistic_regression_model_artifact/
+
+# Ignore MLflow local tracking data
+MLProject/mlruns/
