@@ -151,4 +151,5 @@ jobs:
         git pull origin main --rebase
         git add .
         git commit -m "Automated: Model retraining results and artifacts updated" || true
+        git pull origin main --rebase
         git push
