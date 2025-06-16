@@ -107,22 +107,26 @@ if __name__ == "__main__":
             mlflow.log_metric("test_accuracy", final_accuracy)
             mlflow.log_metric("test_precision", final_precision)
             mlflow.log_metric("test_recall", final_recall)
-            mlflow.log_metric("test_f1_score", final_f1)
-            mlflow.log_metric("test_roc_auc", final_roc_auc)
+            mlflow.log_metric("test_f1_score", final_f1)            mlflow.log_metric("test_roc_auc", final_roc_auc)
             mlflow.log_metric("best_cv_roc_auc", best_score)
 
-            # --- Perubahan Kritis di Sini ---
-            # Mengemas model dengan custom PythonModel (ChurnPredictor dari inference.py)
-            # dan menyertakan model terlatih sebagai artefak
-            mlflow.pyfunc.log_model(
-                artifact_path="best_logistic_regression_model_artifact",
-                python_model=ChurnPredictor(),
-                artifacts={"model_path": best_model}, # Menyertakan model terlatih sebagai artefak yang akan diakses ChurnPredictor
-                # Menambahkan signature untuk input dan output model
-                input_example=X_train.head(1), 
-                signature=mlflow.models.signature.infer_signature(X_train, y_pred)
-            )
-            print("mlflow.pyfunc.log_model called successfully with custom PythonModel. Model should be logged to MLflow artifacts.") # DEBUGGING
+            # --- PERUBAHAN KRITIS DI SINI ---
+            import tempfile
+            import joblib # joblib sudah diimpor di awal, bagus
+
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                model_local_path_pkl = os.path.join(tmp_dir, "model.pkl")
+                joblib.dump(best_model, model_local_path_pkl)
+
+                mlflow.pyfunc.log_model(
+                    artifact_path="best_logistic_regression_model_artifact",
+                    python_model=ChurnPredictor(),
+
+                    artifacts={"model_path": model_local_path_pkl}, 
+                    input_example=X_train.head(1), 
+                    signature=mlflow.models.signature.infer_signature(X_train, y_pred)
+                )
+            print("mlflow.pyfunc.log_model called successfully with custom PythonModel and explicit artifact path. Model should be logged to MLflow artifacts.") 
 
         print("\n--- Tuning Model Selesai. Hasil dicatat ke MLflow. ---")
 
