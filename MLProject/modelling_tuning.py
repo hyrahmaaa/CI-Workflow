@@ -4,7 +4,7 @@ import os
 import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV 
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 mlflow.set_experiment("Telco Churn Prediction - Tuned Model")
@@ -39,18 +39,20 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     """
     print("\n--- Memulai Hyperparameter Tuning dan Logging Manual ---")
 
-    mlflow.sklearn.autolog(disable=True) 
+    mlflow.sklearn.autolog(disable=True)
 
-    with mlflow.start_run():
+    with mlflow.start_run() as run: # Tambahkan 'as run' untuk akses mudah ke run_id
+        run_id = run.info.run_id # Dapatkan run_id di awal run
+
         model_base = LogisticRegression(random_state=42)
 
         grid_search = GridSearchCV(
             estimator=model_base,
             param_grid=param_grid,
-            cv=3, 
-            scoring='accuracy', 
-            n_jobs=-1, 
-            verbose=1 
+            cv=3,
+            scoring='accuracy',
+            n_jobs=-1,
+            verbose=1
         )
 
         print("Melakukan Grid Search untuk hyperparameter tuning...")
@@ -92,13 +94,23 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
         mlflow.sklearn.log_model(best_model, "tuned_logistic_regression_model")
         print("Model terbaik telah dilog ke MLflow.")
 
-        print(f"MLflow Run ID: {mlflow.active_run().info.run_id}")
+        print(f"MLflow Run ID: {run_id}") # Menggunakan run_id yang sudah diambil di awal
+        
+        # BARIS PENTING YANG DITAMBAHKAN/DIREVISI
+        # Menyimpan run_id ke file mlflow_run_id.txt di direktori yang sama
+        # dengan skrip modelling_tuning.py (yaitu, MLProject/)
+        with open("mlflow_run_id.txt", "w") as f:
+            f.write(run_id)
+        print(f"MLflow Run ID '{run_id}' berhasil disimpan ke mlflow_run_id.txt")
+        # AKHIR BARIS PENTING
+        
     print("--- Hyperparameter Tuning dan Logging Manual Selesai ---")
 
 
 if __name__ == "__main__":
     print("##### Memulai Proses Hyperparameter Tuning Data Telco Churn #####")
 
+    # PATH_TO_PROCESSED_DATA ini akan resolve ke MLProject/telco_churn_preprocessing
     PATH_TO_PROCESSED_DATA = os.path.join(os.path.dirname(__file__), 'telco_churn_preprocessing')
 
     X_train, X_test, y_train, y_test = load_processed_data(PATH_TO_PROCESSED_DATA)
