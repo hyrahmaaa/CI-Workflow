@@ -3,21 +3,27 @@ import numpy as np
 import os
 import mlflow
 import mlflow.sklearn
-import matplotlib.pyplot as plt # Import untuk plotting
-import seaborn as sns # Opsional, untuk plotting yang lebih bagus
+import matplotlib.pyplot as plt
+import seaborn as sns # Pastikan seaborn diinstal via conda.yaml
+
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split, GridSearchCV # Import GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score, make_scorer
 
-
+# --- KONFIGURASI DAGSHUB/MLFLOW TRACKING ---
+# Ambil dari environment variables yang disetel di GitHub Actions,
+# atau gunakan nilai default jika dijalankan lokal tanpa env vars.
 MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "https://dagshub.com/hyrahmaaa/Submission-Membangun-Sistem-Machine-Learning.mlflow")
-MLFLOW_TRACKING_USERNAME = os.environ.get("MLFLOW_TRACKING_USERNAME", "DAGSHUB_USERNAME")
-MLFLOW_TRACKING_PASSWORD = os.environ.get("MLFLOW_TRACKING_PASSWORD", "DAGSHUB_TOKEN")
+MLFLOW_TRACKING_USERNAME = os.environ.get("MLFLOW_TRACKING_USERNAME", "hyrahmaaa")
+MLFLOW_TRACKING_PASSWORD = os.environ.get("MLFLOW_TRACKING_PASSWORD", "568d3a44cb143c40099b002d1e13b8429305e1d6") # Pastikan ini token Dagshubmu
 
+# Set MLflow tracking URI
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+# Set environment variables untuk autentikasi Dagshub (penting untuk push ke Dagshub)
 os.environ["MLFLOW_TRACKING_USERNAME"] = MLFLOW_TRACKING_USERNAME
 os.environ["MLFLOW_TRACKING_PASSWORD"] = MLFLOW_TRACKING_PASSWORD
 
+# Set nama eksperimen MLflow
 mlflow.set_experiment("Telco Churn Prediction - Dagshub Autolog Run")
 
 def load_processed_data(data_dir):
@@ -129,12 +135,13 @@ def train_and_log_model_dagshub(X_train, y_train, X_test, y_test):
         mlflow.sklearn.log_model(best_model, "tuned_logistic_regression_model")
         
         # --- Plotting Koefisien Fitur (Mirip Feature Importance untuk LR) ---
+        # Ini akan membuat plot dan menyimpannya sebagai artifact
         if hasattr(best_model, 'coef_') and len(best_model.coef_.shape) == 2:
             coefficients = pd.Series(best_model.coef_[0], index=X_train.columns)
             coefficients_abs = coefficients.abs().sort_values(ascending=True) # Sort berdasarkan nilai absolut
             
             fig, ax = plt.subplots(figsize=(10, 8))
-            coefficients_abs.nlargest(20).plot(kind='barh', ax=ax, color='skyblue')
+            sns.barplot(x=coefficients_abs.nlargest(20).values, y=coefficients_abs.nlargest(20).index, ax=ax, palette="viridis")
             ax.set_title("Top 20 Absolute Feature Coefficients (Tuned Logistic Regression)")
             ax.set_xlabel("Absolute Coefficient Value")
             ax.set_ylabel("Feature")
@@ -165,6 +172,7 @@ if __name__ == "__main__":
 
     X_train, X_test, y_train, y_test = load_processed_data(PATH_TO_PROCESSED_DATA)
 
+    # Pastikan data berhasil dimuat sebelum melanjutkan pelatihan
     if X_train is not None and X_test is not None and y_train is not None and y_test is not None:
         train_and_log_model_dagshub(X_train, y_train, X_test, y_test)
 
@@ -174,4 +182,3 @@ if __name__ == "__main__":
     else:
         print("\n--- Pelatihan Model Dibatalkan karena data tidak dapat dimuat. ---")
     print("\n--- Pelatihan Model ke Dagshub Selesai! ---")
-
