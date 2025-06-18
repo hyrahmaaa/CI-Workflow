@@ -6,10 +6,6 @@ import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-# --- KONFIGURASI DAGSHUB/MLFLOW TRACKING ---
-# MLFLOW_TRACKING_URI = "https://dagshub.com/hyrahmaaa/Submission-Membangun-Sistem-Machine-Learning.mlflow"
-# MLFLOW_TRACKING_USERNAME = "hyrahmaaa"
-# MLFLOW_TRACKING_PASSWORD = "568d3a44cb143c40099b002d1e13b8429305e1d6"
 
 
 mlflow.set_experiment("Telco Churn Prediction - Dagshub Autolog Run")
@@ -27,6 +23,7 @@ def load_processed_data(data_dir):
         X_test = pd.read_csv(os.path.join(data_dir, 'X_test.csv'))
         y_train = pd.read_csv(os.path.join(data_dir, 'y_train.csv')).squeeze()
         y_test = pd.read_csv(os.path.join(data_dir, 'y_test.csv')).squeeze()
+
         print(f"Data yang diproses berhasil dimuat dari: {data_dir}")
         print(f"Dimensi data yang dimuat: X_train={X_train.shape}, X_test={X_test.shape}")
         return X_train, X_test, y_train, y_test
@@ -45,7 +42,7 @@ def train_and_log_model_dagshub(X_train, y_train, X_test, y_test, params):
     print("\nMelatih model dan melog ke Dagshub...")
 
     mlflow.sklearn.autolog() 
-
+    
     mlflow.log_params(params)
 
     model = LogisticRegression(random_state=42, **params)
@@ -78,8 +75,7 @@ def train_and_log_model_dagshub(X_train, y_train, X_test, y_test, params):
     print(f"Recall: {recall:.4f}")
     print(f"F1-Score: {f1:.4f}")
     print(f"ROC AUC: {roc_auc:.4f}")
-    print(f"MLflow Run ID: {mlflow.active_run().info.run_id}")
-    print(f"Link ke Dagshub Run: {mlflow.active_run().info.artifact_uri.split('/artifacts')[0]}") 
+
 
 if __name__ == "__main__":
     print("--- Memulai Pelatihan Model Machine Learning ke Dagshub ---")
@@ -102,3 +98,4 @@ if __name__ == "__main__":
     else:
         print("\n--- Pelatihan Model Dibatalkan karena data tidak dapat dimuat. ---")
     print("\n--- Pelatihan Model ke Dagshub Selesai! ---")
+
