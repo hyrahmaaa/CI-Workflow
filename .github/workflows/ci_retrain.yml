@@ -46,33 +46,41 @@ jobs:
           echo "DAGSHUB_REPO_NAME=${{ env.DAGSHUB_REPO_NAME }}" >> $GITHUB_ENV
 
       - name: Run MLflow Project (Model Retraining)
-        id: run_mlflow_project 
+        id: run_mlflow_project # Memberikan ID ke langkah ini untuk mengakses outputnya
         run: |
-          set -ex 
+          set -ex # Exit immediately if a command exits with a non-zero status
 
-          source "$(conda info --base)/etc/profile.d/conda.sh" 
-          conda activate mlproject-env 
+          source "$(conda info --base)/etc/profile.d/conda.sh" # Inisialisasi conda shell
+          conda activate mlproject-env # Aktifkan environment Conda
 
           echo "=== Verifying MLProject folder contents ==="
-          ls -F MLProject/ 
+          ls -F MLProject/ # Menampilkan isi folder MLProject untuk debugging
           echo "========================================="
 
-          echo "=== Running MLflow Project ==="
-          MLFLOW_FULL_OUTPUT=$(mlflow run MLProject/ --env-manager local 2>&1)
-          echo "$MLFLOW_FULL_OUTPUT"
+          echo "=== Starting MLflow Project Execution ==="
+          # Menjalankan MLflow Project dan menangkap semua outputnya
+          # stderr (2) digabungkan ke stdout (1)
+          # Perintah ini akan gagal jika ada masalah dalam modelling.py
+          if ! MLFLOW_FULL_OUTPUT=$(mlflow run MLProject/ --env-manager local 2>&1); then
+            echo "MLflow run command failed. Full output:"
+            echo "$MLFLOW_FULL_OUTPUT" # Cetak semua outputnya, termasuk error
+            exit 1 # Keluar dengan status gagal
+          fi
+          echo "=== MLflow Project Execution Finished (Successfully) ==="
+          echo "$MLFLOW_FULL_OUTPUT" # Cetak output lengkap jika berhasil
 
+          # Ekstrak RUN_ID dari output MLflow
           RUN_ID=$(echo "$MLFLOW_FULL_OUTPUT" | grep -oP "Successfully completed MLflow Run with ID \K\w+" | tail -n 1)
 
           if [ -z "$RUN_ID" ]; then
-            echo "Error: MLflow Run ID could not be extracted. MLflow run might have failed."
+            echo "Error: MLflow Run ID could not be extracted even though command completed. Check output for unexpected messages."
             exit 1
           fi
 
-          echo "MLFLOW_RUN_ID=$RUN_ID" >> "$GITHUB_ENV" 
-          echo "mlflow_run_id=$RUN_ID" >> "$GITHUB_OUTPUT" 
+          echo "MLFLOW_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
+          echo "mlflow_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "MLflow run initiated with ID: $RUN_ID"
-          echo "=== MLflow Project execution finished ==="
-          
+          echo "=== MLflow Project execution and Run ID extraction complete ==="
         env:
           MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
           MLFLOW_TRACKING_USERNAME: ${{ env.MLFLOW_TRACKING_USERNAME }}
