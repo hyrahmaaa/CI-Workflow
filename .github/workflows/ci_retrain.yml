@@ -1,172 +1,159 @@
-# .github/workflows/ci_retrain.yml
-
-name: CI - Retrain ML Model
+name: CI - Retrain & Docker Build (Telco Churn)
 
 on:
   push:
-    branches:
-      - main 
-    paths:
-      - 'MLProject/modelling_tuning.py'
-      - 'MLProject/conda.yaml'
-      - 'MLProject/MLProject'
-      - 'MLProject/requirements.txt'
-      - 'MLProject/telco_churn_preprocessing/**'
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  retrain_model:
-    runs-on: ubuntu-latest
+  train_and_build_docker:
+    runs-on: ubuntu-latest 
 
     permissions:
-      contents: write
-      id-token: write
+      contents: write 
+      id-token: write 
 
     env:
-      DAGSHUB_REPO_NAME: CI-Workflow
-      
+      MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+      MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+      MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }} 
+      DAGSHUB_REPO_NAME: CI-Workflow 
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4 
 
-    - name: Set up Conda Environment
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-          python-version: 3.9
-          auto-activate-base: true
-          activate-environment: mlproject-env
-          environment-file: MLProject/conda.yaml
-          force-create: true
+      - name: Set up Miniconda environment
+        uses: conda-incubator/setup-miniconda@v2 
+        with:
+          python-version: 3.13 
+          auto-activate-base: false 
+          activate-environment: mlproject-env 
+          environment-file: MLProject/conda.yaml 
+          force-create: true 
 
-    - name: Install MLflow and DagsHub client
-      run: |
-        source "$(conda info --base)/etc/profile.d/conda.sh"
-        conda activate mlproject-env
-        
-        python -m pip install --upgrade pip
-        pip cache purge 
-        pip install mlflow==2.13.0 dagshub==0.5.10
+      - name: Install DagsHub client 
+        run: |
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate mlproject-env 
+          pip install dagshub==0.5.10 
 
-        python -c "import dagshub; print('DagsHub version:', dagshub.__version__)"
-        python -c "import mlflow; print('MLflow version:', mlflow.__version__)"
+      - name: Configure MLflow Tracking for DagsHub
+        run: |
+          echo "MLFLOW_TRACKING_URI=${{ env.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_USERNAME=${{ env.MLFLOW_TRACKING_USERNAME }}" >> $GITHUB_ENV
+          echo "MLFLOW_TRACKING_PASSWORD=${{ env.MLFLOW_TRACKING_PASSWORD }}" >> $GITHUB_ENV
+          echo "DAGSHUB_REPO_NAME=${{ env.DAGSHUB_REPO_NAME }}" >> $GITHUB_ENV
 
-    - name: Configure DagsHub MLflow Tracking
-      run: |
-        echo "MLFLOW_TRACKING_URI=https://dagshub.com/hyrahmaaa/CI-Workflow.mlflow" >> "$GITHUB_ENV"
-        echo "MLFLOW_TRACKING_USERNAME=hyrahmaaa" >> "$GITHUB_ENV"
-        echo "MLFLOW_TRACKING_PASSWORD=${{ secrets.DAGSHUB_TOKEN }}" >> "$GITHUB_ENV"
-        echo "DAGSHUB_REPO_NAME=${{ github.event.repository.name }}" >> "$GITHUB_ENV"
+      - name: Run MLflow Project (Model Retraining)
+        id: run_mlflow_project 
+        run: |
+          set -ex 
 
-    - name: Run MLflow Project (Model Retraining)
-      id: run_mlflow_project
-      run: |
-        set -ex
-        source "$(conda info --base)/etc/profile.d/conda.sh"
-        conda activate mlproject-env
-        
-        # --- DEBUGGING: Verifikasi Isi Folder MLProject ---
-        echo "=== Verifying MLProject folder contents ==="
-        ls -F MLProject/
-        echo "========================================="
-        # --- AKHIR DEBUGGING ---
+          source "$(conda info --base)/etc/profile.d/conda.sh" 
+          conda activate mlproject-env 
 
-        # --- DEBUGGING: Periksa import/syntax awal ---
-        # Ini akan memastikan tidak ada error syntax/import, dan tidak akan mencetak output dari __main__
-        echo "=== Testing MLProject/modelling_tuning.py for basic import/syntax issues ==="
-        python -c "import MLProject.modelling_tuning" || { echo "Error: Basic import/syntax check failed. See traceback above."; exit 1; }
-        echo "=== Basic import/syntax check passed. Proceeding with module execution ==="
-        # --- AKHIR DEBUGGING ---
+          echo "=== Verifying MLProject folder contents ==="
+          ls -F MLProject/ 
+          echo "========================================="
 
-        echo "=== Executing MLProject.modelling_tuning directly as a module ==="
-        # Jalankan skrip Python sebagai modul dalam paket. Ini akan memicu __main__
-        MLFLOW_FULL_OUTPUT=$(python -m MLProject.modelling_tuning 2>&1)
-        echo "$MLFLOW_FULL_OUTPUT"
-        
-        # Ekstrak RUN_ID dari output Python script
-        # Pesan "MLflow run started with ID: <ID_ANDA>" akan digunakan
-        RUN_ID=$(echo "$MLFLOW_FULL_OUTPUT" | grep -oP "MLflow run started with ID: \K[^']+" | tail -n 1)
-        
-        if [ -z "$RUN_ID" ]; then
-          echo "Error: MLflow Run ID could not be extracted. Direct Python run might have failed to log."
-          exit 1
-        fi
-        
-        echo "MLFLOW_RUN_ID=$RUN_ID" >> "$GITHUB_ENV"
-        echo "MLflow run initiated with ID: $RUN_ID"
-        echo "mlflow_run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-        
-        echo "=== Direct Python execution finished ==="
-      env:
-        MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
-        MLFLOW_TRACKING_USERNAME: ${{ env.MLFLOW_TRACKING_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD: ${{ env.MLFLOW_TRACKING_PASSWORD }}
-      
-    - name: Download Model Artifact for Further Use
-      run: |
-        set -e
-        source "$(conda info --base)/etc/profile.d/conda.sh"
-        conda activate mlproject-env
-        
-        MLFLOW_RUN_ID="${{ steps.run_mlflow_project.outputs.mlflow_run_id }}"
-        
-        if [ -z "$MLFLOW_RUN_ID" ]; then
-          echo "Error: MLFLOW_RUN_ID is empty. Cannot download artifact."
-          exit 1
-        fi
+          echo "=== Running MLflow Project ==="
+          MLFLOW_FULL_OUTPUT=$(mlflow run MLProject/ --env-manager local 2>&1)
+          echo "$MLFLOW_FULL_OUTPUT"
 
-        ARTIFACT_PATH_ON_DAGSHUB="best_logistic_regression_model_artifact"
-        DOWNLOAD_DESTINATION="MLProject/best_logistic_regression_model_artifact"
+          RUN_ID=$(echo "$MLFLOW_FULL_OUTPUT" | grep -oP "Successfully completed MLflow Run with ID \K\w+" | tail -n 1)
 
-        echo "Attempting to download artifact '$ARTIFACT_PATH_ON_DAGSHUB' for run ID '$MLFLOW_RUN_ID' from DagsHub..."
-        
-        python -c "
+          if [ -z "$RUN_ID" ]; then
+            echo "Error: MLflow Run ID could not be extracted. MLflow run might have failed."
+            exit 1
+          fi
 
-        import mlflow
-        import os
-        import shutil
+          echo "MLFLOW_RUN_ID=$RUN_ID" >> "$GITHUB_ENV" 
+          echo "mlflow_run_id=$RUN_ID" >> "$GITHUB_OUTPUT" 
+          echo "MLflow run initiated with ID: $RUN_ID"
+          echo "=== MLflow Project execution finished ==="
+          
+        env:
+          MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ env.MLFLOW_TRACKING_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ env.MLFLOW_TRACKING_PASSWORD }}
 
-        os.environ['MLFLOW_TRACKING_URI'] = os.environ.get('MLFLOW_TRACKING_URI_GHA')
-        os.environ['MLFLOW_TRACKING_USERNAME'] = os.environ.get('MLFLOW_TRACKING_USERNAME_GHA')
-        os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('MLFLOW_TRACKING_PASSWORD_GHA')
-        
-        run_id = os.environ.get('MLFLOW_RUN_ID_GHA')
-        artifact_path_on_dagshub = os.environ.get('ARTIFACT_NAME_ON_DAGSHUB_GHA')
-        download_destination = os.environ.get('DOWNLOAD_DESTINATION_GHA')
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3 
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }} 
+          password: ${{ secrets.DOCKER_TOKEN }}   
 
-        print(f'Mencoba mengunduh artefak: run_id={run_id}, artifact_path={artifact_path_on_dagshub}, dst_path={download_destination}')
-        
-        if os.path.exists(download_destination):
-            print(f'Membersihkan direktori yang sudah ada: {download_destination}')
-            shutil.rmtree(download_destination)
-    
-        downloaded_path = mlflow.artifacts.download_artifacts(
-            run_id=run_id,
-            artifact_path=artifact_path_on_dagshub,
-            dst_path=download_destination
-        )
-        print(f'Artefak berhasil diunduh ke: {downloaded_path}')
+      - name: Build Docker Image and Push to Hub
+        uses: docker/build-push-action@v5 
+        with:
+          context: ./MLProject 
+          file: ./MLProject/Dockerfile 
+          push: true 
+          tags: ${{ secrets.DOCKER_USERNAME }}/telco-churn-model:${{ steps.run_mlflow_project.outputs.mlflow_run_id }}
+          cache-from: type=gha 
 
-        if not os.path.exists(downloaded_path):
-            raise FileNotFoundError(f'Path artefak yang diunduh tidak ada: {downloaded_path}')
-        if not os.path.isdir(downloaded_path):
-            raise ValueError(f'Path artefak yang diunduh bukan direktori: {downloaded_path}')
-        if not os.listdir(downloaded_path):
-            raise ValueError(f'Direktori artefak yang diunduh kosong: {downloaded_path}')
-        "
-      env:
-        MLFLOW_RUN_ID_GHA: ${{ steps.run_mlflow_project.outputs.mlflow_run_id }}
-        ARTIFACT_NAME_ON_DAGSHUB_GHA: best_logistic_regression_model_artifact
-        DOWNLOAD_DESTINATION_GHA: MLProject/best_logistic_regression_model_artifact
-        MLFLOW_TRACKING_URI_GHA: ${{ env.MLFLOW_TRACKING_URI }}
-        MLFLOW_TRACKING_USERNAME_GHA: ${{ env.MLFLOW_TRACKING_USERNAME }}
-        MLFLOW_TRACKING_PASSWORD_GHA: ${{ secrets.DAGSHUB_TOKEN }}
-      if: success() && steps.run_mlflow_project.outputs.mlflow_run_id != ''
-      
-    - name: Commit processed data
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"  
-        git add .
-        git commit -m "Automated: Model retraining results and artifacts updated" || true
-        git pull origin main --rebase
-        git push
+      - name: Download Model Artifact for Further Use
+        if: success() && steps.run_mlflow_project.outputs.mlflow_run_id != ''
+        run: |
+          set -e # Keluar jika ada error
+          source "$(conda info --base)/etc/profile.d/conda.sh"
+          conda activate mlproject-env
+
+          MLFLOW_RUN_ID="${{ steps.run_mlflow_project.outputs.mlflow_run_id }}"
+          ARTIFACT_PATH_ON_DAGSHUB="logistic_regression_model_autolog" 
+          DOWNLOAD_DESTINATION="downloaded_model_artifact" 
+
+          echo "Attempting to download artifact '$ARTIFACT_PATH_ON_DAGSHUB' for run ID '$MLFLOW_RUN_ID' from DagsHub..."
+
+          python -c "
+          import mlflow
+          import os
+          import shutil
+
+          os.environ['MLFLOW_TRACKING_URI'] = os.environ.get('MLFLOW_TRACKING_URI')
+          os.environ['MLFLOW_TRACKING_USERNAME'] = os.environ.get('MLFLOW_TRACKING_USERNAME')
+          os.environ['MLFLOW_TRACKING_PASSWORD'] = os.environ.get('MLFLOW_TRACKING_PASSWORD')
+
+          run_id = os.environ.get('MLFLOW_RUN_ID_GHA')
+          artifact_path_on_dagshub = os.environ.get('ARTIFACT_NAME_ON_DAGSHUB_GHA')
+          download_destination = os.environ.get('DOWNLOAD_DESTINATION_GHA')
+
+          print(f'Mencoba mengunduh artefak: run_id={run_id}, artifact_path={artifact_path_on_dagshub}, dst_path={download_destination}')
+
+          if os.path.exists(download_destination):
+              print(f'Membersihkan direktori yang sudah ada: {download_destination}')
+              shutil.rmtree(download_destination)
+
+              downloaded_path = mlflow.artifacts.download_artifacts(
+              run_id=run_id,
+              artifact_path=artifact_path_on_dagshub,
+              dst_path=download_destination
+          )
+          print(f'Artefak berhasil diunduh ke: {downloaded_path}')
+
+          if not os.path.exists(downloaded_path):
+              raise FileNotFoundError(f'Path artefak yang diunduh tidak ada: {downloaded_path}')
+          if not os.path.isdir(downloaded_path):
+              raise ValueError(f'Path artefak yang diunduh bukan direktori: {downloaded_path}')
+          if not os.listdir(downloaded_path):
+              raise ValueError(f'Direktori artefak yang diunduh kosong: {downloaded_path}')
+          "
+        env: 
+          MLFLOW_RUN_ID_GHA: ${{ steps.run_mlflow_project.outputs.mlflow_run_id }}
+          ARTIFACT_NAME_ON_DAGSHUB_GHA: logistic_regression_model
+          DOWNLOAD_DESTINATION_GHA: downloaded_model_artifact 
+          MLFLOW_TRACKING_URI: ${{ env.MLFLOW_TRACKING_URI }}
+          MLFLOW_TRACKING_USERNAME: ${{ env.MLFLOW_TRACKING_USERNAME }}
+          MLFLOW_TRACKING_PASSWORD: ${{ env.MLFLOW_TRACKING_PASSWORD }} 
+
+      - name: Commit processed data and artifacts (if any)
+        run: |
+          git config user.name "github-actions[bot]" 
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Cek apakah ada perubahan yang perlu di-commit (misal: mlruns folder jika ada local tracking)
+          git add .
+          git diff-index --quiet HEAD || git commit -m "Automated: Model retraining, Dagshub run ${{ steps.run_mlflow_project.outputs.mlflow_run_id }} and Docker build"
+          git push
+        if: success() 

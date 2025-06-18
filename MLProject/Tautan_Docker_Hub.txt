@@ -1,0 +1,1 @@
+https://hub.docker.com/repository/docker/hyrahmaaa/telco_churn_model/

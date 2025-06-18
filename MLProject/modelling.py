@@ -11,7 +11,6 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 # MLFLOW_TRACKING_USERNAME = "hyrahmaaa"
 # MLFLOW_TRACKING_PASSWORD = "568d3a44cb143c40099b002d1e13b8429305e1d6"
 
-# mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
 mlflow.set_experiment("Telco Churn Prediction - Dagshub Autolog Run")
 
@@ -45,10 +44,10 @@ def train_and_log_model_dagshub(X_train, y_train, X_test, y_test, params):
     """
     print("\nMelatih model dan melog ke Dagshub...")
 
-    mlflow.sklearn.autolog()
+    mlflow.sklearn.autolog() 
 
     with mlflow.start_run():
-        mlflow.log_params(params) 
+        mlflow.log_params(params)
 
         model = LogisticRegression(random_state=42, **params)
         model.fit(X_train, y_train)
@@ -62,17 +61,17 @@ def train_and_log_model_dagshub(X_train, y_train, X_test, y_test, params):
         f1 = f1_score(y_test, y_pred)
         roc_auc = roc_auc_score(y_test, y_prob)
 
-        mlflow.log_metric("accuracy", accuracy) 
-        mlflow.log_metric("precision", precision) 
-        mlflow.log_metric("recall", recall) 
-        mlflow.log_metric("f1_score", f1) 
-        mlflow.log_metric("roc_auc", roc_auc) 
+        mlflow.log_metric("accuracy", accuracy)
+        mlflow.log_metric("precision", precision)
+        mlflow.log_metric("recall", recall)
+        mlflow.log_metric("f1_score", f1)
+        mlflow.log_metric("roc_auc", roc_auc)
 
         mlflow.log_metric("num_features_in_model", X_train.shape[1])
         mlflow.log_metric("total_samples_trained", X_train.shape[0])
         print(f"Manually logged: num_features_in_model={X_train.shape[1]}, total_samples_trained={X_train.shape[0]}")
 
-        # mlflow.sklearn.log_model(model, "logistic_regression_model_autolog") 
+        mlflow.sklearn.log_model(model, "logistic_regression_model_autolog")
 
         print(f"Model berhasil dilatih.")
         print(f"Accuracy: {accuracy:.4f}")
@@ -81,7 +80,7 @@ def train_and_log_model_dagshub(X_train, y_train, X_test, y_test, params):
         print(f"F1-Score: {f1:.4f}")
         print(f"ROC AUC: {roc_auc:.4f}")
         print(f"MLflow Run ID: {mlflow.active_run().info.run_id}")
-        print(f"Link ke Dagshub Run: {mlflow.active_run().info.artifact_uri.split('/artifacts')[0]}") # Link ke Dagshub UI
+        print(f"Link ke Dagshub Run: {mlflow.active_run().info.artifact_uri.split('/artifacts')[0]}") 
 
 if __name__ == "__main__":
     print("--- Memulai Pelatihan Model Machine Learning ke Dagshub ---")
@@ -96,7 +95,7 @@ if __name__ == "__main__":
             "solver": "liblinear",
             "max_iter": 100
         }
-        
+
         train_and_log_model_dagshub(X_train, y_train, X_test, y_test, model_params)
 
         print("\nPeriksa Dagshub MLflow Tracking UI Anda untuk melihat hasil run ini.")
