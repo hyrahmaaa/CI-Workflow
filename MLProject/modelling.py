@@ -5,9 +5,15 @@ import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from sklearn.model_selection import train_test_split 
 
-mlflow.set_experiment("Telco Churn Prediction - Basic Run")
+# --- KONFIGURASI DAGSHUB/MLFLOW TRACKING ---
+# MLFLOW_TRACKING_URI = "https://dagshub.com/hyrahmaaa/Submission-Membangun-Sistem-Machine-Learning.mlflow"
+# MLFLOW_TRACKING_USERNAME = "hyrahmaaa"
+# MLFLOW_TRACKING_PASSWORD = "568d3a44cb143c40099b002d1e13b8429305e1d6"
+
+# mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+
+mlflow.set_experiment("Telco Churn Prediction - Dagshub Autolog Run")
 
 def load_processed_data(data_dir):
     """
@@ -20,7 +26,6 @@ def load_processed_data(data_dir):
 
         X_train = pd.read_csv(os.path.join(data_dir, 'X_train.csv'))
         X_test = pd.read_csv(os.path.join(data_dir, 'X_test.csv'))
-
         y_train = pd.read_csv(os.path.join(data_dir, 'y_train.csv')).squeeze()
         y_test = pd.read_csv(os.path.join(data_dir, 'y_test.csv')).squeeze()
         print(f"Data yang diproses berhasil dimuat dari: {data_dir}")
@@ -33,28 +38,41 @@ def load_processed_data(data_dir):
         print(f"Error saat memuat data yang diproses: {e}")
         return None, None, None, None
 
-def train_and_log_model(X_train, y_train, X_test, y_test, params):
+def train_and_log_model_dagshub(X_train, y_train, X_test, y_test, params):
     """
-    Melatih model dan mencatat eksperimen menggunakan MLflow autolog.
+    Melatih model dan mencatat eksperimen menggunakan MLflow autolog ke Dagshub.
+    Menambahkan manual logging untuk memenuhi kriteria "2 nilai tambahan".
     """
-    print("\nMelatih model...")
+    print("\nMelatih model dan melog ke Dagshub...")
 
-    mlflow.sklearn.autolog() 
+    mlflow.sklearn.autolog()
 
     with mlflow.start_run():
-        run_id = mlflow.active_run().info.run_id
-        print(f"MLflow run started with ID: {run_id}")
+        mlflow.log_params(params) 
+
         model = LogisticRegression(random_state=42, **params)
         model.fit(X_train, y_train)
 
         y_pred = model.predict(X_test)
-        y_prob = model.predict_proba(X_test)[:, 1] 
+        y_prob = model.predict_proba(X_test)[:, 1]
 
         accuracy = accuracy_score(y_test, y_pred)
         precision = precision_score(y_test, y_pred)
         recall = recall_score(y_test, y_pred)
         f1 = f1_score(y_test, y_pred)
         roc_auc = roc_auc_score(y_test, y_prob)
+
+        mlflow.log_metric("accuracy", accuracy) 
+        mlflow.log_metric("precision", precision) 
+        mlflow.log_metric("recall", recall) 
+        mlflow.log_metric("f1_score", f1) 
+        mlflow.log_metric("roc_auc", roc_auc) 
+
+        mlflow.log_metric("num_features_in_model", X_train.shape[1])
+        mlflow.log_metric("total_samples_trained", X_train.shape[0])
+        print(f"Manually logged: num_features_in_model={X_train.shape[1]}, total_samples_trained={X_train.shape[0]}")
+
+        # mlflow.sklearn.log_model(model, "logistic_regression_model_autolog") 
 
         print(f"Model berhasil dilatih.")
         print(f"Accuracy: {accuracy:.4f}")
@@ -63,9 +81,10 @@ def train_and_log_model(X_train, y_train, X_test, y_test, params):
         print(f"F1-Score: {f1:.4f}")
         print(f"ROC AUC: {roc_auc:.4f}")
         print(f"MLflow Run ID: {mlflow.active_run().info.run_id}")
+        print(f"Link ke Dagshub Run: {mlflow.active_run().info.artifact_uri.split('/artifacts')[0]}") # Link ke Dagshub UI
 
 if __name__ == "__main__":
-    print("--- Memulai Pelatihan Model Machine Learning ---")
+    print("--- Memulai Pelatihan Model Machine Learning ke Dagshub ---")
 
     PATH_TO_PROCESSED_DATA = os.path.join(os.path.dirname(__file__), 'telco_churn_preprocessing')
 
@@ -78,11 +97,10 @@ if __name__ == "__main__":
             "max_iter": 100
         }
         
-        train_and_log_model(X_train, y_train, X_test, y_test, model_params)
+        train_and_log_model_dagshub(X_train, y_train, X_test, y_test, model_params)
 
-        print("\nMLflow Tracking UI dapat dijalankan dengan perintah: mlflow ui")
-        print(f"Akses di browser: http://localhost:5000")
+        print("\nPeriksa Dagshub MLflow Tracking UI Anda untuk melihat hasil run ini.")
 
     else:
         print("\n--- Pelatihan Model Dibatalkan karena data tidak dapat dimuat. ---")
-    print("\n--- Pelatihan Model Selesai. Periksa MLflow UI untuk melihat hasilnya! ---")
+    print("\n--- Pelatihan Model ke Dagshub Selesai! ---")
