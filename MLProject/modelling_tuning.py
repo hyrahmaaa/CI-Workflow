@@ -91,12 +91,14 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     mlflow.sklearn.log_model(best_model, "tuned_logistic_regression_model")
     print("Model terbaik telah dilog ke MLflow.")
 
+    # Ambil run_id dari run yang sudah aktif
     current_run_id = mlflow.active_run().info.run_id 
     print(f"MLflow Run ID: {current_run_id}")
-
+    
+    # Simpan run_id ke file
     with open("mlflow_run_id.txt", "w") as f:
-        f.write(run_id)
-    print(f"MLflow Run ID '{run_id}' berhasil disimpan ke mlflow_run_id.txt")
+        f.write(current_run_id)
+    print(f"MLflow Run ID '{current_run_id}' berhasil disimpan ke mlflow_run_id.txt")
 
     print("--- Hyperparameter Tuning dan Logging Manual Selesai ---")
 
