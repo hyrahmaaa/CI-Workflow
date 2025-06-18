@@ -48,10 +48,13 @@ jobs:
 
     - name: Run MLflow Project (Model Retraining)
       run: |
-        # Pastikan path ke data preprocessing sudah diubah di modelling_tuning.py
-        # PATH_TO_PROCESSED_DATA = os.path.join(os.path.dirname(__file__), 'telco_churn_preprocessing')
-        # Jika MLProject/modelling_tuning.py dijalankan dari MLProject/, maka path ini sudah benar.
-        mlflow run MLProject/ --env-manager local # MLflow akan menggunakan conda.yml untuk env
+        echo "Running MLflow Project..."
+        # Pastikan PATH_TO_PROCESSED_DATA sudah benar di modelling_tuning.py
+        # Dan pastikan modelling_tuning.py sudah direvisi untuk menyimpan run_id.txt
+        
+        # Gunakan 'conda run -n mlproject-env' untuk memastikan 'mlflow' ditemukan
+        conda run -n mlproject-env mlflow run MLProject/ --env-manager local
+      shell: bash -l {0} # Pastikan shell tetap bash -l {0} untuk Conda
 
     - name: Get latest MLflow run_id
       id: get_run_id
