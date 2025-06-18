@@ -9,7 +9,7 @@ on:
       # Trigger hanya jika ada perubahan pada file/folder kunci di MLProject
       - 'MLProject/modelling.py'
       - 'MLProject/conda.yaml'
-      - 'MLProject/MLproject'
+      - 'MLProject/MLProject'
       - 'MLProject/Dockerfile'
       - 'MLProject/telco_churn_preprocessing/**'
       - '.github/workflows/ci_retrain.yml' # Juga trigger jika workflow file ini berubah
@@ -83,7 +83,7 @@ jobs:
               echo "Error: mlflow_run_id.txt not found. MLflow run ID cannot be extracted."
               exit 1 # Gagal jika Run ID tidak ditemukan
           fi
-        # Definisi output dari step ini
+        # Definisi output dari step ini - INDENTASI INI SUDAH DIKOREKSI
         outputs:
           mlflow_run_id: ${{ steps.run_ml_project.outputs.mlflow_run_id }}
           
