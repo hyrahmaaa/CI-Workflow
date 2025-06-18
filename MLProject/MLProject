@@ -1,9 +1,9 @@
 # CI-Workflow/MLProject/MLProject
 
-name: TelcoChurnModelRetraining
+name: Telco_Churn_Model_Retraining
 
-conda_env: conda.yaml 
+# conda_env: conda.yaml 
 
 entry_points:
   main:
-    command: "python -m MLProject.modelling_tuning" 
+    command: "python modelling_py" 
