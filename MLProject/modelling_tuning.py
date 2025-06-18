@@ -37,7 +37,11 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     Melakukan hyperparameter tuning menggunakan GridSearchCV dan mencatat hasilnya
     secara manual dengan MLflow.
     """
-    mlflow.sklearn.autolog(disable=True)
+    # Pastikan baris ini sejajar dengan 'model_base = ...' atau pernyataan tingkat atas lainnya
+    mlflow.sklearn.autolog(disable=True) 
+
+    # Anda bisa tambahkan kembali baris print ini jika mau, sejajarkan indentasinya
+    print("\n--- Memulai Hyperparameter Tuning dan Logging Manual ---") # Ini opsional, tapi bagus untuk log
 
     model_base = LogisticRegression(random_state=42)
 
@@ -90,7 +94,7 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     print("Model terbaik telah dilog ke MLflow.")
 
     # Ambil run_id dari run yang sudah aktif
-    current_run_id = mlflow.active_run().info.run_id 
+    current_run_id = mlflow.active_run().info.run_id
     print(f"MLflow Run ID: {current_run_id}")
     
     # Simpan run_id ke file
