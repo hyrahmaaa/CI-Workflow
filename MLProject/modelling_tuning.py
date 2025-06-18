@@ -41,69 +41,63 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
 
     mlflow.sklearn.autolog(disable=True)
 
-    with mlflow.start_run() as run: # Tambahkan 'as run' untuk akses mudah ke run_id
-        run_id = run.info.run_id # Dapatkan run_id di awal run
+    model_base = LogisticRegression(random_state=42)
 
-        model_base = LogisticRegression(random_state=42)
+    grid_search = GridSearchCV(
+        estimator=model_base,
+        param_grid=param_grid,
+        cv=3,
+        scoring='accuracy',
+        n_jobs=-1,
+        verbose=1
+    )
 
-        grid_search = GridSearchCV(
-            estimator=model_base,
-            param_grid=param_grid,
-            cv=3,
-            scoring='accuracy',
-            n_jobs=-1,
-            verbose=1
-        )
+    print("Melakukan Grid Search untuk hyperparameter tuning...")
+    grid_search.fit(X_train, y_train)
 
-        print("Melakukan Grid Search untuk hyperparameter tuning...")
-        grid_search.fit(X_train, y_train)
+    best_model = grid_search.best_estimator_
+    best_params = grid_search.best_params_
+    best_cv_score = grid_search.best_score_
 
-        best_model = grid_search.best_estimator_
-        best_params = grid_search.best_params_
-        best_cv_score = grid_search.best_score_
+    print(f"Tuning selesai. Best Hyperparameters: {best_params}")
+    print(f"Best CV Accuracy: {best_cv_score:.4f}")
 
-        print(f"Tuning selesai. Best Hyperparameters: {best_params}")
-        print(f"Best CV Accuracy: {best_cv_score:.4f}")
+    print("Logging parameter terbaik secara manual...")
+    mlflow.log_params(best_params)
 
-        print("Logging parameter terbaik secara manual...")
-        mlflow.log_params(best_params)
+    mlflow.log_param("best_cv_accuracy", best_cv_score)
 
-        mlflow.log_param("best_cv_accuracy", best_cv_score)
+    y_pred_test = best_model.predict(X_test)
+    y_prob_test = best_model.predict_proba(X_test)[:, 1]
 
-        y_pred_test = best_model.predict(X_test)
-        y_prob_test = best_model.predict_proba(X_test)[:, 1]
+    test_accuracy = accuracy_score(y_test, y_pred_test)
+    test_precision = precision_score(y_test, y_pred_test)
+    test_recall = recall_score(y_test, y_pred_test)
+    test_f1 = f1_score(y_test, y_pred_test)
+    test_roc_auc = roc_auc_score(y_test, y_prob_test)
 
-        test_accuracy = accuracy_score(y_test, y_pred_test)
-        test_precision = precision_score(y_test, y_pred_test)
-        test_recall = recall_score(y_test, y_pred_test)
-        test_f1 = f1_score(y_test, y_pred_test)
-        test_roc_auc = roc_auc_score(y_test, y_prob_test)
+    print("Logging metrik test set secara manual...")
+    mlflow.log_metric("test_accuracy", test_accuracy)
+    mlflow.log_metric("test_precision", test_precision)
+    mlflow.log_metric("test_recall", test_recall)
+    mlflow.log_metric("test_f1_score", test_f1)
+    mlflow.log_metric("test_roc_auc", test_roc_auc)
 
-        print("Logging metrik test set secara manual...")
-        mlflow.log_metric("test_accuracy", test_accuracy)
-        mlflow.log_metric("test_precision", test_precision)
-        mlflow.log_metric("test_recall", test_recall)
-        mlflow.log_metric("test_f1_score", test_f1)
-        mlflow.log_metric("test_roc_auc", test_roc_auc)
+    mlflow.log_metric("num_features", X_train.shape[1])
+    mlflow.log_metric("num_train_samples", X_train.shape[0])
+    print(f"Test Set Accuracy: {test_accuracy:.4f}")
 
-        mlflow.log_metric("num_features", X_train.shape[1])
-        mlflow.log_metric("num_train_samples", X_train.shape[0])
-        print(f"Test Set Accuracy: {test_accuracy:.4f}")
+    print("Logging model terbaik secara manual...")
+    mlflow.sklearn.log_model(best_model, "tuned_logistic_regression_model")
+    print("Model terbaik telah dilog ke MLflow.")
 
-        print("Logging model terbaik secara manual...")
-        mlflow.sklearn.log_model(best_model, "tuned_logistic_regression_model")
-        print("Model terbaik telah dilog ke MLflow.")
+    current_run_id = mlflow.active_run().info.run_id 
+    print(f"MLflow Run ID: {current_run_id}")
 
-        print(f"MLflow Run ID: {run_id}") # Menggunakan run_id yang sudah diambil di awal
-        
-        # BARIS PENTING YANG DITAMBAHKAN/DIREVISI
-        # Menyimpan run_id ke file mlflow_run_id.txt di direktori yang sama
-        # dengan skrip modelling_tuning.py (yaitu, MLProject/)
-        with open("mlflow_run_id.txt", "w") as f:
-            f.write(run_id)
-        print(f"MLflow Run ID '{run_id}' berhasil disimpan ke mlflow_run_id.txt")
-        # AKHIR BARIS PENTING
-        
+    with open("mlflow_run_id.txt", "w") as f:
+        f.write(run_id)
+    print(f"MLflow Run ID '{run_id}' berhasil disimpan ke mlflow_run_id.txt")
+
     print("--- Hyperparameter Tuning dan Logging Manual Selesai ---")
 
 
