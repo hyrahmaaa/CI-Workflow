@@ -5,7 +5,7 @@ import mlflow
 import mlflow.sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from sklearn.model_selection import train_test_split # Pastikan ini diimport jika digunakan untuk split data di preprocessing
+from sklearn.model_selection import train_test_split 
 
 mlflow.set_experiment("Telco Churn Prediction - Basic Run")
 
@@ -42,6 +42,8 @@ def train_and_log_model(X_train, y_train, X_test, y_test, params):
     mlflow.sklearn.autolog() 
 
     with mlflow.start_run():
+        run_id = mlflow.active_run().info.run_id
+        print(f"MLflow run started with ID: {run_id}")
         model = LogisticRegression(random_state=42, **params)
         model.fit(X_train, y_train)
 
