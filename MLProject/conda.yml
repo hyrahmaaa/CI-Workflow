@@ -11,4 +11,3 @@ dependencies:
   - matplotlib 
   - seaborn 
   - mlflow==2.22.1
-  - dagshub
