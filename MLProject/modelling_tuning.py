@@ -50,7 +50,7 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
         param_grid=param_grid,
         cv=3,
         scoring='accuracy',
-        n_jobs=-1,
+        n_jobs=1,
         verbose=1
     )
 
