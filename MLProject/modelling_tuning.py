@@ -7,12 +7,53 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-# Tidak perlu set_experiment di sini, mlflow run akan menangani
-# mlflow.set_experiment("Telco Churn Prediction - Tuned Model") 
-
 def load_processed_data(data_dir):
-    # ... (fungsi ini tetap sama) ...
-    pass
+    """
+    Memuat data yang sudah diproses (X_train, X_test, y_train, y_test) dari direktori yang diberikan.
+    """
+    print(f"DEBUG: Memulai load_processed_data. data_dir = '{data_dir}'") # Debug 1
+
+    try:
+        if not os.path.exists(data_dir):
+            print(f"ERROR: Direktori '{data_dir}' TIDAK ditemukan.") # Debug 2
+            return None, None, None, None
+
+        print(f"DEBUG: Direktori '{data_dir}' DITEMUKAN. Mencoba membaca file...") # Debug 3
+
+        # Path lengkap untuk setiap file
+        x_train_path = os.path.join(data_dir, 'X_train.csv')
+        x_test_path = os.path.join(data_dir, 'X_test.csv')
+        y_train_path = os.path.join(data_dir, 'y_train.csv')
+        y_test_path = os.path.join(data_dir, 'y_test.csv')
+
+        # Debug: Cek keberadaan masing-masing file
+        print(f"DEBUG: Cek X_train.csv: {os.path.exists(x_train_path)}")
+        print(f"DEBUG: Cek X_test.csv: {os.path.exists(x_test_path)}")
+        print(f"DEBUG: Cek y_train.csv: {os.path.exists(y_train_path)}")
+        print(f"DEBUG: Cek y_test.csv: {os.path.exists(y_test_path)}")
+
+        X_train = pd.read_csv(x_train_path)
+        X_test = pd.read_csv(x_test_path)
+        y_train = pd.read_csv(y_train_path).squeeze()
+        y_test = pd.read_csv(y_test_path).squeeze()
+        
+        print(f"Data yang diproses berhasil dimuat dari: {data_dir}")
+        print(f"Dimensi data yang dimuat: X_train={X_train.shape}, X_test={X_test.shape}")
+        return X_train, X_test, y_train, y_test
+    except FileNotFoundError as fnfe:
+        print(f"ERROR: File tidak ditemukan di '{data_dir}'. Detail: {fnfe}") # Debug 4
+        return None, None, None, None
+    except pd.errors.EmptyDataError as ede: # Tangani jika file kosong
+        print(f"ERROR: Salah satu file CSV kosong atau tidak memiliki kolom. Detail: {ede}")
+        return None, None, None, None
+    except pd.errors.ParserError as pe: # Tangani jika file corrupt
+        print(f"ERROR: Terjadi kesalahan parsing saat membaca CSV. File mungkin rusak. Detail: {pe}")
+        return None, None, None, None
+    except Exception as e:
+        print(f"ERROR: Terjadi kesalahan tak terduga saat memuat data yang diproses: {e}") # Debug 5
+        import traceback
+        traceback.print_exc() # Ini akan mencetak stack trace penuh untuk error yang tidak terduga
+        return None, None, None, None
 
 def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     print("\n--- Memulai Hyperparameter Tuning dan Logging Manual ---")
