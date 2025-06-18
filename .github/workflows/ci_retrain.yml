@@ -1,68 +1,105 @@
-name: MLflow CI-CD for Telco Churn Model
+name: MLflow Model Retrain and Docker Push
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ main ] # Pemicu: setiap push ke branch 'main'
+  workflow_dispatch: # Pemicu: bisa dijalankan secara manual dari GitHub UI
 
 jobs:
   train-and-build-docker:
-    runs-on: ubuntu-latest 
-    
+    runs-on: ubuntu-latest # Menggunakan runner Ubuntu terbaru
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4 
+    - name: Checkout repository
+      uses: actions/checkout@v4 # Mengambil kode repositori
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-  
-      - name: Install dependencies from requirements.txt
-        run: pip install -r MLProject/requirements.txt
-  
-      - name: Run MLflow Project
-        run: mlflow run MLProject/ --env-manager local
+    - name: Set up Miniconda
+      uses: conda-incubator/setup-miniconda@v3 # Menginstal Miniconda
+      with:
+        python-version: '3.13' # Sesuai dengan python di conda.yml
+        conda-tools-version: 'latest'
+        auto-update-conda: true
+        activate-environment: mlproject-env # Nama environment dari conda.yml
 
-      - name: Upload MLflow artifacts to GitHub
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlflow-runs
-          path: mlruns/
-          if-no-files-found: error
+    - name: Conda info and environment activation
+      run: |
+        conda info
+        conda activate mlproject-env
+      shell: bash -l {0} # Penting untuk mengaktifkan conda env
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+    - name: Install dependencies from conda.yml
+      # Menggunakan 'conda env update' untuk menginstal dependensi dari conda.yml
+      run: |
+        conda env update --file MLProject/conda.yml --name mlproject-env
+        conda activate mlproject-env
+        # Verifikasi instalasi pip dependencies (jika ada yang hanya di requirements.txt)
+        pip install -r MLProject/requirements.txt
+      shell: bash -l {0}
+
+    - name: Set up MLflow Tracking Environment Variables
+      run: |
+        echo "MLFLOW_TRACKING_URI=${{ secrets.MLFLOW_TRACKING_URI }}" >> $GITHUB_ENV
+        echo "MLFLOW_TRACKING_USERNAME=${{ secrets.MLFLOW_TRACKING_USERNAME }}" >> $GITHUB_ENV
+        echo "MLFLOW_TRACKING_PASSWORD=${{ secrets.MLFLOW_TRACKING_PASSWORD }}" >> $GITHUB_ENV
+        echo "DAGSHUB_USERNAME=${{ secrets.DAGSHUB_USERNAME }}" >> $GITHUB_ENV
+        echo "DAGSHUB_TOKEN=${{ secrets.DAGSHUB_TOKEN }}" >> $GITHUB_ENV
+        echo "DAGSHUB_REPO_NAME=${{ secrets.DAGSHUB_REPO_NAME }}" >> $GITHUB_ENV
+      # Menambahkan secrets ke environment variables agar MLflow dapat terhubung ke DagsHub
+
+    - name: Run MLflow Project (Model Retraining)
+      run: |
+        # Pastikan path ke data preprocessing sudah diubah di modelling_tuning.py
+        # PATH_TO_PROCESSED_DATA = os.path.join(os.path.dirname(__file__), 'telco_churn_preprocessing')
+        # Jika MLProject/modelling_tuning.py dijalankan dari MLProject/, maka path ini sudah benar.
+        mlflow run MLProject/ --env-manager local # MLflow akan menggunakan conda.yml untuk env
+
+    - name: Get latest MLflow run_id
+      id: get_run_id
+      run: |
+        RUN_ID=$(cat MLProject/mlflow_run_id.txt)
+        echo "RUN_ID=$RUN_ID" >> $GITHUB_OUTPUT
+        echo "Successfully retrieved RUN_ID: $RUN_ID"
+      # Mengambil RUN_ID yang telah disimpan oleh script modelling_tuning.py
+
+    - name: Upload MLflow artifacts to GitHub (Optional)
+      uses: actions/upload-artifact@v4
+      with:
+        name: mlflow-runs-artifacts
+        path: mlruns/ # Mengunggah direktori artefak MLflow
+        if-no-files-found: ignore # Mengabaikan jika tidak ada file (jika tracking ke DagsHub, lokal mlruns mungkin kosong)
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }} # Menggunakan secret DOCKER_USERNAME
+        password: ${{ secrets.DOCKER_TOKEN }} # Menggunakan secret DOCKER_TOKEN
+
+    - name: Build Docker Model and Push to Hub
+      run: |
+        RUN_ID=${{ steps.get_run_id.outputs.RUN_ID }}
+        if [ -z "$RUN_ID" ]; then
+          echo "Error: MLflow RUN_ID not found. Cannot build Docker image."
+          exit 1
+        fi
+        echo "Building Docker image for MLflow Run ID: $RUN_ID"
         
-      - name: Build Docker Model and Push to Hub
-        run: |
-          RUN_ID=${{ steps.get_run_id.outputs.RUN_ID }}
-          echo "Building Docker image for Run ID: $RUN_ID"
-          
-          MODEL_FOLDER_NAME="tuned_model"
-          IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/workflow-ci-revenue-predictor:${RUN_ID:0:12}"
-          MODEL_URI="mlruns/0/${RUN_ID}/artifacts/${MODEL_FOLDER_NAME}"
-          
-          if [ ! -d "$MODEL_URI" ]; then
-            echo "Error: Model directory not found at $MODEL_URI"
-            ls -R mlruns
-            exit 1
-          fi
-          
-          mlflow models build-docker --model-uri "$MODEL_URI" --name "$IMAGE_NAME"
-          
-          echo "Pushing Docker image: $IMAGE_NAME"
-          docker push "$IMAGE_NAME"
-
-      - name: Commit processed data and artifacts (if any)
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          git add .
-          git diff-index --quiet HEAD || git commit -m "Automated: Model retraining, Dagshub run ${{ steps.run_ml_project.outputs.mlflow_run_id }} and Docker build"
-          git push
-        if: success()
+        # Nama artefak model yang dilog di modelling_tuning.py
+        MODEL_ARTIFACT_NAME="tuned_logistic_regression_model" 
+        
+        # Nama image Docker yang akan didorong
+        # Disarankan menggunakan sebagian dari run_id untuk tag unik
+        IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/telco-churn-predictor:${RUN_ID:0:12}"
+        
+        # Model URI untuk MLflow (mengacu pada model yang dilog di DagsHub atau lokal)
+        # Jika MLflow tracking ke DagsHub, model URI akan otomatis mengarah ke sana
+        # Pastikan DagsHub sudah terkonfigurasi untuk menyimpan artefak model.
+        MODEL_URI="runs:/${RUN_ID}/${MODEL_ARTIFACT_NAME}"
+        
+        echo "Attempting to build Docker image from MLflow URI: $MODEL_URI"
+        
+        # Perintah untuk membangun Docker image dari model MLflow
+        mlflow models build-docker --model-uri "$MODEL_URI" --name "$IMAGE_NAME"
+        
+        echo "Pushing Docker image: $IMAGE_NAME to Docker Hub"
+        docker push "$IMAGE_NAME"
+      shell: bash -l {0} # Pastikan Conda environment aktif untuk mlflow command
