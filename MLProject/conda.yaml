@@ -1,14 +1,14 @@
-# MLProject/conda.yaml
-
 name: mlproject-env
 channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.13
+  - python=3.13 
   - pip
-  - pip:
-    - mlflow==2.22.1
-    - pandas==2.2.3
-    - numpy==2.2.3
-    - scikit-learn==1.6.1 
+  - pandas==2.2.3
+  - numpy==2.2.3
+  - scikit-learn==1.6.1
+  - matplotlib 
+  - seaborn 
+  - mlflow==2.22.1 
+  - dagshub==0.5.10 
