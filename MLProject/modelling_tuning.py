@@ -11,22 +11,20 @@ def load_processed_data(data_dir):
     """
     Memuat data yang sudah diproses (X_train, X_test, y_train, y_test) dari direktori yang diberikan.
     """
-    print(f"DEBUG: Memulai load_processed_data. data_dir = '{data_dir}'") # Debug 1
+    print(f"DEBUG: Memulai load_processed_data. data_dir = '{data_dir}'") 
 
     try:
         if not os.path.exists(data_dir):
-            print(f"ERROR: Direktori '{data_dir}' TIDAK ditemukan.") # Debug 2
+            print(f"ERROR: Direktori '{data_dir}' TIDAK ditemukan.") 
             return None, None, None, None
 
-        print(f"DEBUG: Direktori '{data_dir}' DITEMUKAN. Mencoba membaca file...") # Debug 3
-
-        # Path lengkap untuk setiap file
+        print(f"DEBUG: Direktori '{data_dir}' DITEMUKAN. Mencoba membaca file...") 
+        
         x_train_path = os.path.join(data_dir, 'X_train.csv')
         x_test_path = os.path.join(data_dir, 'X_test.csv')
         y_train_path = os.path.join(data_dir, 'y_train.csv')
         y_test_path = os.path.join(data_dir, 'y_test.csv')
 
-        # Debug: Cek keberadaan masing-masing file
         print(f"DEBUG: Cek X_train.csv: {os.path.exists(x_train_path)}")
         print(f"DEBUG: Cek X_test.csv: {os.path.exists(x_test_path)}")
         print(f"DEBUG: Cek y_train.csv: {os.path.exists(y_train_path)}")
@@ -41,36 +39,23 @@ def load_processed_data(data_dir):
         print(f"Dimensi data yang dimuat: X_train={X_train.shape}, X_test={X_test.shape}")
         return X_train, X_test, y_train, y_test
     except FileNotFoundError as fnfe:
-        print(f"ERROR: File tidak ditemukan di '{data_dir}'. Detail: {fnfe}") # Debug 4
+        print(f"ERROR: File tidak ditemukan di '{data_dir}'. Detail: {fnfe}") 
         return None, None, None, None
-    except pd.errors.EmptyDataError as ede: # Tangani jika file kosong
+    except pd.errors.EmptyDataError as ede: 
         print(f"ERROR: Salah satu file CSV kosong atau tidak memiliki kolom. Detail: {ede}")
         return None, None, None, None
-    except pd.errors.ParserError as pe: # Tangani jika file corrupt
+    except pd.errors.ParserError as pe: 
         print(f"ERROR: Terjadi kesalahan parsing saat membaca CSV. File mungkin rusak. Detail: {pe}")
         return None, None, None, None
     except Exception as e:
-        print(f"ERROR: Terjadi kesalahan tak terduga saat memuat data yang diproses: {e}") # Debug 5
+        print(f"ERROR: Terjadi kesalahan tak terduga saat memuat data yang diproses: {e}") 
         import traceback
-        traceback.print_exc() # Ini akan mencetak stack trace penuh untuk error yang tidak terduga
+        traceback.print_exc() 
         return None, None, None, None
 
 def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     print("\n--- Memulai Hyperparameter Tuning dan Logging Manual ---")
 
-    #mlflow.sklearn.autolog(disable=True) 
-
-    # Dapatkan run yang AKTIF dari MLflow Project
-    # Jika ada run aktif, gunakan itu. Jika tidak, ini akan menimbulkan error.
-    # Ini seharusnya aman karena 'mlflow run' sudah memulai run.
-    #current_run = mlflow.active_run()
-    #if current_run is None:
-        # Fallback (seharusnya tidak terjadi jika mlflow run sudah dieksekusi)
-        #print("Peringatan: Tidak ada MLflow Run aktif yang terdeteksi. Mencoba memulai run baru.")
-        #current_run = mlflow.start_run()
-
-    #current_run_id = current_run.info.run_id
-    #print(f"Menggunakan MLflow Run ID (dari active_run): {current_run_id}")
 
 
     model_base = LogisticRegression(random_state=42)
@@ -80,7 +65,7 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
         param_grid=param_grid,
         cv=3,
         scoring='accuracy',
-        n_jobs=1, # TETAPKAN INI KE 1 UNTUK DEBUGGING
+        n_jobs=1, 
         verbose=1
     )
 
@@ -95,8 +80,7 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     print(f"Best CV Accuracy: {best_cv_score:.4f}")
 
     print("Logging parameter terbaik secara manual...")
-    # Sekarang, panggil fungsi logging MLflow secara langsung.
-    # Mereka akan secara otomatis menggunakan run yang sudah dimulai oleh 'mlflow run'.
+
     mlflow.log_params(best_params)
     mlflow.log_param("best_cv_accuracy", best_cv_score)
 
@@ -124,11 +108,9 @@ def tune_and_log_model_manual(X_train, y_train, X_test, y_test, param_grid):
     mlflow.sklearn.log_model(best_model, "tuned_logistic_regression_model")
     print("Model terbaik telah dilog ke MLflow.")
 
-    # Dapatkan run ID setelah semua logging selesai
     final_run_id = mlflow.active_run().info.run_id
     print(f"MLflow Run ID: {final_run_id}")
     
-    # Simpan run_id ke file
     with open("mlflow_run_id.txt", "w") as f:
         f.write(final_run_id)
     print(f"MLflow Run ID '{final_run_id}' berhasil disimpan ke mlflow_run_id.txt")
@@ -143,7 +125,7 @@ if __name__ == "__main__":
 
     X_train, X_test, y_train, y_test = load_processed_data(PATH_TO_PROCESSED_DATA)
 
-    if X_train is not None: # Pastikan data berhasil dimuat sebelum melanjutkan
+    if X_train is not None: 
         param_grid_lr = {
             'C': [0.01, 0.1, 1.0, 10.0],
             'solver': ['liblinear', 'lbfgs'],
