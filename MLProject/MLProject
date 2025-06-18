@@ -2,7 +2,7 @@
 
 name: Telco_Churn_Model_Retraining
 
-conda_env: conda.yaml
+conda_env: conda.yml
 
 entry_points:
   main:
